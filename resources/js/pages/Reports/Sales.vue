@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { Printer } from 'lucide-vue-next';
+import { Printer, FileSpreadsheet, FileText } from 'lucide-vue-next';
 
 interface Summary {
     total_sales: number;
@@ -24,9 +24,27 @@ interface BestSeller {
     has_incomplete_cost: boolean;
 }
 
+interface PaymentMethodSummary {
+    method: string;
+    label: string;
+    transactions: number;
+    total_sales: number;
+    percentage: number;
+}
+
+interface OrderTypeSummary {
+    order_type: string;
+    label: string;
+    transactions: number;
+    items_sold: number;
+    total_sales: number;
+}
+
 const props = defineProps<{
     summary: Summary;
     bestSellers: BestSeller[];
+    salesByPaymentMethod: PaymentMethodSummary[];
+    orderTypeSummary: OrderTypeSummary[];
     filters: { period: 'daily' | 'monthly' | 'yearly'; date: string };
 }>();
 
@@ -40,6 +58,17 @@ const periodLabel = computed(() => {
 });
 
 const hasIncompleteCost = computed(() => props.bestSellers.some((b) => b.has_incomplete_cost));
+
+const paymentTotals = computed(() => ({
+    transactions: props.salesByPaymentMethod.reduce((sum, p) => sum + p.transactions, 0),
+    total_sales: props.salesByPaymentMethod.reduce((sum, p) => sum + p.total_sales, 0),
+}));
+
+const orderTypeTotals = computed(() => ({
+    transactions: props.orderTypeSummary.reduce((sum, o) => sum + o.transactions, 0),
+    items_sold: props.orderTypeSummary.reduce((sum, o) => sum + o.items_sold, 0),
+    total_sales: props.orderTypeSummary.reduce((sum, o) => sum + o.total_sales, 0),
+}));
 
 function applyFilters() {
     router.get(
@@ -65,13 +94,26 @@ function formatPercent(value: number | string) {
 function printReport() {
     window.print();
 }
+
+function exportUrl(kind: 'excel' | 'word') {
+    const routeName = kind === 'excel' ? 'reports.sales.export' : 'reports.sales.export.word';
+    return route(routeName, { period: period.value, date: date.value });
+}
+
+function exportExcel() {
+    window.location.href = exportUrl('excel');
+}
+
+function exportWord() {
+    window.location.href = exportUrl('word');
+}
 </script>
 
 <template>
     <Head title="Sales Report" />
 
     <AppLayout>
-        <div class="space-y-6 p-3 sm:p-4">
+        <div class="space-y-6 p-3 sm:p-4 print:p-0">
             <div class="flex flex-col gap-4 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold">Sales Report</h1>
@@ -105,12 +147,30 @@ function printReport() {
                         <Printer class="h-4 w-4" />
                         Print
                     </button>
+
+                    <button
+                        @click="exportExcel"
+                        class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                    >
+                        <FileSpreadsheet class="h-4 w-4" />
+                        Export Excel
+                    </button>
+
+                    <button
+                        @click="exportWord"
+                        class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                    >
+                        <FileText class="h-4 w-4" />
+                        Export Word
+                    </button>
                 </div>
             </div>
 
             <div class="hidden print:block text-center mb-4">
-                <h1 class="text-xl font-bold">Sales Report — {{ periodLabel }}</h1>
-                <p class="text-sm">{{ date }}</p>
+                <h1 class="text-xl font-bold">JC66 COFFEE SHOP</h1>
+                <h2 class="text-lg font-semibold">SALES REPORT</h2>
+                <p class="text-sm">{{ periodLabel }} — {{ date }}</p>
+                <p class="text-xs text-muted-foreground">Generated: {{ new Date().toLocaleString('en-PH') }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -140,7 +200,7 @@ function printReport() {
                 <div class="rounded-lg border p-4 border-green-200 bg-green-50/50">
                     <p class="text-xs text-muted-foreground">Gross Profit</p>
                     <p class="text-xl font-semibold text-green-700">{{ formatCurrency(summary.gross_profit) }}</p>
-                    <p v-if="hasIncompleteCost" class="mt-1 text-[11px] text-amber-600">
+                    <p v-if="hasIncompleteCost" class="mt-1 text-[11px] text-amber-600 print:hidden">
                         Some items are missing ingredient cost data — figure may be understated.
                     </p>
                 </div>
@@ -148,6 +208,74 @@ function printReport() {
                     <p class="text-xs text-muted-foreground">Gross Margin</p>
                     <p class="text-xl font-semibold">{{ formatPercent(summary.gross_margin) }}</p>
                 </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="overflow-x-auto rounded-lg border">
+                <div class="border-b p-4">
+                    <h2 class="font-semibold">Payment Summary</h2>
+                </div>
+                <table class="w-full min-w-[480px] text-sm">
+                    <thead class="bg-muted/50">
+                        <tr>
+                            <th class="p-2 text-left">Payment Method</th>
+                            <th class="p-2 text-right">Transactions</th>
+                            <th class="p-2 text-right">Total Sales</th>
+                            <th class="p-2 text-right">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="p in salesByPaymentMethod" :key="p.method" class="border-t">
+                            <td class="p-2">{{ p.label }}</td>
+                            <td class="p-2 text-right">{{ p.transactions }}</td>
+                            <td class="p-2 text-right">{{ formatCurrency(p.total_sales) }}</td>
+                            <td class="p-2 text-right">{{ formatPercent(p.percentage) }}</td>
+                        </tr>
+                        <tr v-if="!salesByPaymentMethod.length">
+                            <td colspan="4" class="p-4 text-center text-muted-foreground">No sales in this period</td>
+                        </tr>
+                        <tr v-else class="border-t bg-muted/30 font-medium">
+                            <td class="p-2">Total</td>
+                            <td class="p-2 text-right">{{ paymentTotals.transactions }}</td>
+                            <td class="p-2 text-right">{{ formatCurrency(paymentTotals.total_sales) }}</td>
+                            <td class="p-2 text-right">100.00%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Order Type Summary -->
+            <div class="overflow-x-auto rounded-lg border">
+                <div class="border-b p-4">
+                    <h2 class="font-semibold">Order Type Summary</h2>
+                </div>
+                <table class="w-full min-w-[480px] text-sm">
+                    <thead class="bg-muted/50">
+                        <tr>
+                            <th class="p-2 text-left">Order Type</th>
+                            <th class="p-2 text-right">Transactions</th>
+                            <th class="p-2 text-right">Items Sold</th>
+                            <th class="p-2 text-right">Total Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="o in orderTypeSummary" :key="o.order_type" class="border-t">
+                            <td class="p-2">{{ o.label }}</td>
+                            <td class="p-2 text-right">{{ o.transactions }}</td>
+                            <td class="p-2 text-right">{{ o.items_sold }}</td>
+                            <td class="p-2 text-right">{{ formatCurrency(o.total_sales) }}</td>
+                        </tr>
+                        <tr v-if="!orderTypeSummary.length">
+                            <td colspan="4" class="p-4 text-center text-muted-foreground">No sales in this period</td>
+                        </tr>
+                        <tr v-else class="border-t bg-muted/30 font-medium">
+                            <td class="p-2">Total</td>
+                            <td class="p-2 text-right">{{ orderTypeTotals.transactions }}</td>
+                            <td class="p-2 text-right">{{ orderTypeTotals.items_sold }}</td>
+                            <td class="p-2 text-right">{{ formatCurrency(orderTypeTotals.total_sales) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div class="overflow-x-auto rounded-lg border">
@@ -189,6 +317,19 @@ function printReport() {
                     </tbody>
                 </table>
             </div>
+
+            <!-- Print-only signature footer -->
+            <div class="hidden print:grid print:grid-cols-3 print:gap-8 print:mt-10 print:text-sm">
+                <div>
+                    <p class="border-t border-black pt-1">Prepared by: __________________</p>
+                </div>
+                <div>
+                    <p class="border-t border-black pt-1">Checked by: ___________________</p>
+                </div>
+                <div>
+                    <p class="border-t border-black pt-1">Generated: ____________________</p>
+                </div>
+            </div>
         </div>
     </AppLayout>
 </template>
@@ -197,9 +338,24 @@ function printReport() {
 @media print {
     @page {
         margin: 1cm;
+        size: landscape;
     }
-    body * {
+
+    body {
         visibility: visible;
+    }
+
+    /*
+     * Best-effort selectors for hiding the app chrome (sidebar/nav) that
+     * AppLayout renders around this page. If your AppLayout.vue's sidebar
+     * uses different markup than the common shadcn-vue `data-sidebar`
+     * convention, adjust these selectors to match — everything on this
+     * page itself is already scoped with print:hidden where needed.
+     */
+    [data-sidebar],
+    aside,
+    header nav {
+        display: none !important;
     }
 }
 </style>

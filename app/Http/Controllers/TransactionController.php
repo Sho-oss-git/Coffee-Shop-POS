@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Exports\SalesReportExport;
+use App\Exports\SalesReportWordExport;
 
 class TransactionController extends Controller
 {
@@ -384,15 +389,43 @@ class TransactionController extends Controller
 
     public function salesReport(Request $request)
     {
-        $period = $request->input('period', 'daily'); // daily | monthly | yearly
+        $period = $request->input('period', 'daily');
         $date = $request->input('date', now()->toDateString());
 
-        $query = Transaction::with(['items', 'user'])
+        $transactions = $this->salesPeriodQuery($period, $date)->orderBy('created_at')->get();
+        $allItems = $transactions->flatMap->items;
+
+        $summary = $this->summarizeSales($transactions, $allItems);
+        $productBreakdown = $this->productBreakdown($allItems);
+        $salesByPaymentMethod = $this->paymentMethodSummary($transactions, (float) $summary['total_sales']);
+        $orderTypeSummary = $this->orderTypeSummary($transactions);
+
+        return Inertia::render('Reports/Sales', [
+            'summary' => $summary,
+            'bestSellers' => $productBreakdown->take(10)->values(),
+            'salesByPaymentMethod' => $salesByPaymentMethod,
+            'orderTypeSummary' => $orderTypeSummary,
+            'filters' => [
+                'period' => $period,
+                'date' => $date,
+            ],
+        ]);
+    }
+
+    /**
+     * Base query for the Sales Report, Print, Excel, and Word exports —
+     * the single source of truth for what counts as "the selected
+     * period's sales". Only completed transactions, same as every other
+     * sales/dashboard method in this controller.
+     */
+    private function salesPeriodQuery(string $period, string $date)
+    {
+        $query = Transaction::with(['items.product:id,category', 'user'])
             ->where('status', 'completed');
 
         switch ($period) {
             case 'monthly':
-                $anchor = \Carbon\Carbon::parse($date . '-01'); // month input is "YYYY-MM"
+                $anchor = \Carbon\Carbon::parse($date.'-01'); // month input is "YYYY-MM"
                 $query->whereYear('created_at', $anchor->year)
                       ->whereMonth('created_at', $anchor->month);
                 break;
@@ -406,14 +439,25 @@ class TransactionController extends Controller
                 break;
         }
 
-        $transactions = $query->orderBy('created_at')->get();
+        return $query;
+    }
 
-        $allItems = $transactions->flatMap->items;
+    private function salesPeriodLabel(string $period, string $date): string
+    {
+        return match ($period) {
+            'monthly' => \Carbon\Carbon::parse($date.'-01')->format('F Y'),
+            'yearly' => (string) $date,
+            default => \Carbon\Carbon::parse($date)->format('F j, Y'),
+        };
+    }
+
+    private function summarizeSales($transactions, $allItems): array
+    {
         $totalCogs = (float) $allItems->whereNotNull('cogs')->sum('cogs');
         $totalRevenue = (float) $transactions->sum('total');
         $grossProfit = round($totalRevenue - $totalCogs, 2);
 
-        $summary = [
+        return [
             'total_sales' => round($totalRevenue, 2),
             'transaction_count' => $transactions->count(),
             'items_sold' => (int) $allItems->sum('quantity'),
@@ -424,17 +468,27 @@ class TransactionController extends Controller
             'gross_profit' => $grossProfit,
             'gross_margin' => $totalRevenue > 0 ? round(($grossProfit / $totalRevenue) * 100, 2) : 0.0,
         ];
+    }
 
-        $bestSellers = $allItems
+    /**
+     * Every product sold in the period, richest-first by quantity.
+     * Used for bestSellers (top 10) and the full Product Sales sheet.
+     */
+    private function productBreakdown($allItems)
+    {
+        return $allItems
             ->groupBy('product_name')
             ->map(function ($items, $name) {
                 $revenue = (float) $items->sum('subtotal');
                 $cogs = (float) $items->whereNotNull('cogs')->sum('cogs');
                 $profit = round($revenue - $cogs, 2);
+                $quantity = (int) $items->sum('quantity');
 
                 return [
                     'name' => $name,
-                    'quantity' => $items->sum('quantity'),
+                    'category' => optional($items->first()->product)->category ?? '—',
+                    'quantity' => $quantity,
+                    'unit_price' => $quantity > 0 ? round($revenue / $quantity, 2) : 0.0,
                     'total' => round($revenue, 2),
                     'cogs' => round($cogs, 2),
                     'gross_profit' => $profit,
@@ -444,39 +498,238 @@ class TransactionController extends Controller
             })
             ->values()
             ->sortByDesc('quantity')
-            ->take(10)
             ->values();
+    }
 
-        // ---- Sales by Payment Method: cash vs GCash split for the period ----
-        $salesByPaymentMethod = $transactions
+    private function paymentMethodSummary($transactions, float $totalRevenue)
+    {
+        return $transactions
             ->groupBy(fn ($t) => $t->payment_method ?? 'cash')
             ->map(fn ($group, $method) => [
                 'method' => $method,
                 'label' => $method === 'gcash' ? 'GCash' : 'Cash',
-                'count' => $group->count(),
-                'total' => round((float) $group->sum('total'), 2),
+                'transactions' => $group->count(),
+                'total_sales' => round((float) $group->sum('total'), 2),
+                'percentage' => $totalRevenue > 0
+                    ? round(((float) $group->sum('total') / $totalRevenue) * 100, 2)
+                    : 0.0,
             ])
             ->values()
-            ->sortByDesc('total')
+            ->sortByDesc('total_sales')
             ->values();
+    }
 
-        return Inertia::render('Reports/Sales', [
-            'summary' => $summary,
-            'bestSellers' => $bestSellers,
-            'salesByPaymentMethod' => $salesByPaymentMethod,
-            'filters' => [
-                'period' => $period,
-                'date' => $date,
-            ],
-        ]);
+    private function orderTypeSummary($transactions)
+    {
+        return $transactions
+            ->groupBy('order_type')
+            ->map(fn ($group, $type) => [
+                'order_type' => $type,
+                'label' => $type === 'dine_in' ? 'Dine-in' : 'Take-out',
+                'transactions' => $group->count(),
+                'items_sold' => (int) $group->flatMap->items->sum('quantity'),
+                'total_sales' => round((float) $group->sum('total'), 2),
+            ])
+            ->values()
+            ->sortByDesc('total_sales')
+            ->values();
     }
 
     /**
-     * Transaction History for the cashier POS interface — shows only the
-     * transactions processed by the currently authenticated cashier (not
-     * every cashier's sales; that broader view already exists for
-     * Admin/Manager at history() / "Sales History").
+     * Daily → hourly buckets, Monthly → daily buckets, Yearly → monthly
+     * buckets — a natural drill-down for whichever period was selected.
      */
+    private function salesPeriodBreakdown(string $period, $transactions): array
+    {
+        $groupFn = match ($period) {
+            'monthly' => fn ($t) => $t->created_at->format('Y-m-d'),
+            'yearly' => fn ($t) => $t->created_at->format('Y-m'),
+            default => fn ($t) => $t->created_at->format('Y-m-d H:00'),
+        };
+
+        $labelFn = match ($period) {
+            'monthly' => fn ($group) => $group->first()->created_at->format('M j, Y'),
+            'yearly' => fn ($group) => $group->first()->created_at->format('F Y'),
+            default => fn ($group) => $group->first()->created_at->format('g:00 A'),
+        };
+
+        return $transactions
+            ->groupBy($groupFn)
+            ->sortKeys()
+            ->map(function ($group) use ($labelFn) {
+                $items = $group->flatMap->items;
+                $revenue = (float) $group->sum('total');
+                $cogs = (float) $items->whereNotNull('cogs')->sum('cogs');
+                $profit = round($revenue - $cogs, 2);
+
+                return [
+                    'period' => $labelFn($group),
+                    'transactions' => $group->count(),
+                    'items_sold' => (int) $items->sum('quantity'),
+                    'sales' => round($revenue, 2),
+                    'cogs' => round($cogs, 2),
+                    'gross_profit' => $profit,
+                    'gross_margin' => $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0.0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function transactionLogRows($transactions): array
+    {
+        return $transactions->map(fn ($t) => [
+            '#TXN-'.str_pad((string) $t->order_number, 6, '0', STR_PAD_LEFT),
+            $t->created_at->format('Y-m-d'),
+            $t->created_at->format('g:i A'),
+            $t->user?->name ?? 'Unknown',
+            $t->order_number,
+            $t->order_type === 'dine_in' ? 'Dine-in' : 'Take-out',
+            $t->payment_method === 'gcash' ? 'GCash' : 'Cash',
+            $t->gcash_reference_number ?? '—',
+            (float) $t->amount_received,
+            (float) $t->change,
+            (float) $t->total,
+            Str::headline($t->status),
+            $t->created_at->format('Y-m-d H:i:s'),
+        ])->all();
+    }
+
+    /**
+     * Shared data builder for Excel + Word, both full report and
+     * individual sections — mirrors buildInventoryReportData() exactly.
+     *
+     * @return array{0: array{period:string,generated_by:string,generated_date:string}, 1: array}
+     */
+    private function buildSalesReportData(Request $request): array
+    {
+        $period = $request->input('period', 'daily');
+        $date = $request->input('date', now()->toDateString());
+
+        $transactions = $this->salesPeriodQuery($period, $date)->orderBy('created_at')->get();
+        $allItems = $transactions->flatMap->items;
+
+        $summary = $this->summarizeSales($transactions, $allItems);
+        $productBreakdown = $this->productBreakdown($allItems);
+        $paymentSummary = $this->paymentMethodSummary($transactions, (float) $summary['total_sales']);
+        $orderTypeSummary = $this->orderTypeSummary($transactions);
+        $periodBreakdown = $this->salesPeriodBreakdown($period, $transactions);
+
+        $paymentSummaryRows = collect($paymentSummary)->map(fn ($p) => [
+            $p['label'], $p['transactions'], $p['total_sales'], $p['percentage'],
+        ])->all();
+
+        $salesByPeriodRows = collect($periodBreakdown)->map(fn ($p) => [
+            $p['period'], $p['transactions'], $p['items_sold'], $p['sales'], $p['cogs'], $p['gross_profit'], $p['gross_margin'],
+        ])->all();
+
+        $productRows = $productBreakdown->map(fn ($p) => [
+            $p['name'], $p['category'], $p['quantity'], $p['unit_price'],
+            $p['total'], $p['cogs'], $p['gross_profit'], $p['margin'],
+        ])->all();
+
+        $meta = [
+            'period' => ucfirst($period).' — '.$this->salesPeriodLabel($period, $date),
+            'generated_by' => $request->user()?->name ?? 'Manager',
+            'generated_date' => now()->format('M j, Y g:i A'),
+        ];
+
+        return [
+            $meta,
+            [
+                'summary' => $summary,
+                'paymentSummary' => $paymentSummary->all(),
+                'paymentSummaryRows' => $paymentSummaryRows,
+                'orderTypeSummary' => $orderTypeSummary->all(),
+                'bestSellers' => $productBreakdown->take(10)->values()->map(fn ($p) => [
+                    'name' => $p['name'], 'quantity' => $p['quantity'], 'total' => $p['total'],
+                ])->all(),
+                'transactionLog' => $this->transactionLogRows($transactions),
+                'productSales' => $productRows,
+                'salesByPeriodRows' => $salesByPeriodRows,
+            ],
+        ];
+    }
+
+    /**
+     * Downloads the full 5-sheet Sales Report as .xlsx.
+     */
+    public function exportSales(Request $request): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildSalesReportData($request);
+
+        $filename = 'JC66-Sales-Report-'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download(new SalesReportExport($meta, $data), $filename);
+    }
+
+    /**
+     * Downloads a single Sales Report section as .xlsx.
+     */
+    public function exportSalesSheet(Request $request, string $sheet): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildSalesReportData($request);
+
+        [$export, $label] = match ($sheet) {
+            'summary' => [new \App\Exports\Sheets\SalesSummarySheet($meta, $data), 'Sales-Summary'],
+            'transaction-log' => [new \App\Exports\Sheets\TransactionLogSheet($meta, $data['transactionLog']), 'Transaction-Log'],
+            'product-sales' => [new \App\Exports\Sheets\ProductSalesSheet($meta, $data['productSales']), 'Product-Sales'],
+            'payment-summary' => [new \App\Exports\Sheets\PaymentSummarySheet($meta, $data['paymentSummaryRows']), 'Payment-Summary'],
+            'sales-by-period' => [new \App\Exports\Sheets\SalesByPeriodSheet($meta, $data['salesByPeriodRows']), 'Sales-By-Period'],
+            default => abort(404, "Unknown report sheet [{$sheet}]."),
+        };
+
+        $filename = 'JC66-'.$label.'-'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download($export, $filename);
+    }
+
+    /**
+     * Downloads the full 5-section Sales Report as Word.
+     */
+    public function exportSalesWord(Request $request): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildSalesReportData($request);
+
+        $filename = 'JC66-Sales-Report-'.now()->format('Y-m-d').'.docx';
+
+        $path = (new SalesReportWordExport($meta, $data))->save();
+
+        return response()
+            ->download($path, $filename)
+            ->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Downloads a single Sales Report section as Word.
+     *
+     * Supported sections: summary|transaction-log|product-sales|payment-summary|sales-by-period
+     */
+    public function exportSalesWordSection(Request $request, string $sheet): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildSalesReportData($request);
+
+        $labels = [
+            'summary' => 'Sales-Summary',
+            'transaction-log' => 'Transaction-Log',
+            'product-sales' => 'Product-Sales',
+            'payment-summary' => 'Payment-Summary',
+            'sales-by-period' => 'Sales-By-Period',
+        ];
+
+        if (! isset($labels[$sheet])) {
+            abort(404, "Unknown report section [{$sheet}].");
+        }
+
+        $filename = 'JC66-'.$labels[$sheet].'-'.now()->format('Y-m-d').'.docx';
+
+        $path = (new SalesReportWordExport($meta, $data))->saveSection($sheet);
+
+        return response()
+            ->download($path, $filename)
+            ->deleteFileAfterSend(true);
+    }
+
     public function cashierHistory(Request $request)
     {
         $validated = $request->validate([
