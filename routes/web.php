@@ -154,6 +154,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/inventory', [IngredientController::class, 'inventoryReport'])
             ->name('reports.inventory');
 
+        // Inventory Report — Excel export
+        Route::get('reports/inventory/export', [IngredientController::class, 'exportInventory'])
+            ->name('reports.inventory.export');
+
+        // Inventory Report — single-sheet Excel export (summary, stock-in, movement, batch-expiry, low-stock)
+        Route::get('reports/inventory/export/{sheet}', [IngredientController::class, 'exportInventorySheet'])
+            ->where('sheet', 'summary|stock-in|movement|batch-expiry|low-stock')
+            ->name('reports.inventory.export.sheet');
+
         // Restock History Report
         Route::get('reports/restock-history', [IngredientController::class, 'restockHistory'])
             ->name('reports.restock-history');
@@ -200,7 +209,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
 });
 
-    // Settings
+// Settings
 
 require __DIR__.'/settings.php';
 

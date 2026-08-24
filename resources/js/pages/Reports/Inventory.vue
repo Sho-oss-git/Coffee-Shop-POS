@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { ChevronDown, Printer } from 'lucide-vue-next';
+import { ChevronDown, Download } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface LowStockItem {
@@ -133,16 +133,17 @@ function selectSection(key: SectionKey) {
     activeSection.value = key;
 }
 
-// Refs for the two <details> history panels, so Print can force them open —
-// a collapsed <details> is skipped by the browser's print renderer.
-const restockDetails = ref<HTMLDetailsElement | null>(null);
-const productRestockDetails = ref<HTMLDetailsElement | null>(null);
+// Export Excel dropdown — full workbook, or a single sheet only.
+const exportMenuOpen = ref(false);
 
-function printReport() {
-    if (restockDetails.value) restockDetails.value.open = true;
-    if (productRestockDetails.value) productRestockDetails.value.open = true;
-    window.print();
-}
+const exportSheets = [
+    { key: 'summary', label: 'Inventory Summary' },
+    { key: 'stock-in', label: 'Stock-In / Restocking' },
+    { key: 'movement', label: 'Inventory Movement' },
+    { key: 'batch-expiry', label: 'Batch & Expiry' },
+    { key: 'low-stock', label: 'Low Stock Report' },
+];
+
 </script>
 
 <template>
@@ -150,28 +151,50 @@ function printReport() {
 
     <AppLayout>
         <div class="space-y-4 p-3 sm:p-4">
-            <div class="flex flex-col gap-4 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold">Inventory Report</h1>
                     <p class="text-sm text-muted-foreground">Current stock levels and expiry monitoring</p>
                 </div>
 
-                <button
-                    @click="printReport"
-                    class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
-                >
-                    <Printer class="h-4 w-4" />
-                    Print
-                </button>
-            </div>
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <button
+                            type="button"
+                            @click="exportMenuOpen = !exportMenuOpen"
+                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                            <Download class="h-4 w-4" />
+                            Export Excel
+                            <ChevronDown class="h-4 w-4" />
+                        </button>
 
-            <div class="hidden print:block text-center mb-4">
-                <h1 class="text-xl font-bold">Inventory Report</h1>
-                <p class="text-sm">{{ new Date().toLocaleDateString('en-PH', { dateStyle: 'long' }) }}</p>
+                        <div
+                            v-if="exportMenuOpen"
+                            class="absolute right-0 z-10 mt-1 w-56 rounded-md border bg-background shadow-lg"
+                            @click="exportMenuOpen = false"
+                        >
+                            <a
+                                :href="route('reports.inventory.export')"
+                                class="block border-b px-3 py-2 text-sm font-medium hover:bg-muted"
+                            >
+                                Full Report (all sheets)
+                            </a>
+                            <a
+                                v-for="sheet in exportSheets"
+                                :key="sheet.key"
+                                :href="route('reports.inventory.export.sheet', sheet.key)"
+                                class="block px-3 py-2 text-sm hover:bg-muted"
+                            >
+                                {{ sheet.label }} only
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Summary Cards (now clickable tabs) -->
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-5 print:hidden">
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
                 <button
                     type="button"
                     @click="selectSection('total')"
@@ -232,34 +255,10 @@ function printReport() {
                 </button>
             </div>
 
-            <!-- Plain (non-interactive) summary grid for print, so all stats show regardless of the selected tab -->
-            <div class="hidden print:grid grid-cols-5 gap-4">
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Total Ingredients</p>
-                    <p class="text-xl font-semibold">{{ summary.total_ingredients }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Total Stock Value</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.total_stock_value) }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Low Stock Items</p>
-                    <p class="text-xl font-semibold">{{ summary.low_stock_count }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Expiring Soon</p>
-                    <p class="text-xl font-semibold">{{ summary.expiring_soon_count }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Out of Stock</p>
-                    <p class="text-xl font-semibold">{{ summary.out_of_stock_count }}</p>
-                </div>
-            </div>
-
             <!-- Total Stock Value panel -->
             <div
                 class="overflow-x-auto rounded-lg border"
-                :class="activeSection === 'value' ? 'block' : 'hidden print:block'"
+                :class="activeSection === 'value' ? 'block' : 'hidden'"
             >
                 <div class="flex items-center justify-between p-4">
                     <h2 class="font-semibold">Total Stock Value</h2>
@@ -304,7 +303,7 @@ function printReport() {
             <!-- Low Stock Items panel -->
             <div
                 class="overflow-x-auto rounded-lg border"
-                :class="activeSection === 'low_stock' ? 'block' : 'hidden print:block'"
+                :class="activeSection === 'low_stock' ? 'block' : 'hidden'"
             >
                 <div class="flex items-center justify-between p-4">
                     <h2 class="font-semibold">Low Stock Items</h2>
@@ -339,7 +338,7 @@ function printReport() {
             <!-- Expiring Soon panel -->
             <div
                 class="overflow-x-auto rounded-lg border"
-                :class="activeSection === 'expiring' ? 'block' : 'hidden print:block'"
+                :class="activeSection === 'expiring' ? 'block' : 'hidden'"
             >
                 <div class="flex items-center justify-between p-4">
                     <h2 class="font-semibold">Expiring Soon</h2>
@@ -374,7 +373,7 @@ function printReport() {
             <!-- Out of Stock panel -->
             <div
                 class="overflow-x-auto rounded-lg border"
-                :class="activeSection === 'out_of_stock' ? 'block' : 'hidden print:block'"
+                :class="activeSection === 'out_of_stock' ? 'block' : 'hidden'"
             >
                 <div class="flex items-center justify-between p-4">
                     <h2 class="font-semibold">Out of Stock</h2>
@@ -405,7 +404,7 @@ function printReport() {
             </div>
 
             <!-- Recent Restock History (ingredients) -->
-            <details ref="restockDetails" class="group overflow-x-auto rounded-lg border">
+            <details class="group overflow-x-auto rounded-lg border">
                 <summary class="flex cursor-pointer list-none items-center justify-between p-4 select-none">
                     <div>
                         <h2 class="font-semibold">Recent Restock History</h2>
@@ -423,7 +422,7 @@ function printReport() {
                 </summary>
 
                 <!-- Filters -->
-                <div class="flex flex-wrap items-center gap-3 border-t p-3 print:hidden">
+                <div class="flex flex-wrap items-center gap-3 border-t p-3">
                     <input
                         v-model="restockSearch"
                         type="text"
@@ -466,7 +465,7 @@ function printReport() {
             </details>
 
             <!-- Recent Product Restock History (finished_stock products, e.g. cookies) -->
-            <details ref="productRestockDetails" class="group overflow-x-auto rounded-lg border">
+            <details class="group overflow-x-auto rounded-lg border">
                 <summary class="flex cursor-pointer list-none items-center justify-between p-4 select-none">
                     <div>
                         <h2 class="font-semibold">Recent Product Restock History</h2>
@@ -484,7 +483,7 @@ function printReport() {
                 </summary>
 
                 <!-- Filters -->
-                <div class="flex flex-wrap items-center gap-3 border-t p-3 print:hidden">
+                <div class="flex flex-wrap items-center gap-3 border-t p-3">
                     <input
                         v-model="productRestockSearch"
                         type="text"
@@ -542,20 +541,3 @@ function printReport() {
         </div>
     </AppLayout>
 </template>
-
-<style>
-@media print {
-    @page {
-        margin: 1cm;
-    }
-    body * {
-        visibility: visible;
-    }
-    details summary {
-        cursor: default;
-    }
-    details summary svg {
-        display: none;
-    }
-}
-</style>

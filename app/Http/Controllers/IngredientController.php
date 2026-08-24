@@ -13,6 +13,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use App\Exports\InventoryReportExport;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -150,6 +154,157 @@ class IngredientController extends Controller
         );
 
         return back()->with('success', 'Batch added successfully.');
+    }
+
+    /**
+     * Downloads the full 5-sheet Inventory Monitoring Report as .xlsx.
+     * Optional ?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD scope the Stock-In
+     * and Movement sheets (defaults to the current month).
+     */
+    public function exportInventory(Request $request): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildInventoryReportData($request);
+
+        $filename = 'JC66-Inventory-Report-'.now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download(new InventoryReportExport($meta, $data), $filename);
+    }
+
+    /**
+     * Downloads a single sheet of the Inventory Monitoring Report as its own
+     * standalone .xlsx file — e.g. /reports/inventory/export/low-stock.
+     */
+    public function exportInventorySheet(Request $request, string $sheet): BinaryFileResponse
+    {
+        [$meta, $data] = $this->buildInventoryReportData($request);
+
+        [$export, $label] = match ($sheet) {
+            'summary' => [new \App\Exports\Sheets\InventorySummarySheet($meta, $data['summary']), 'Inventory-Summary'],
+            'stock-in' => [new \App\Exports\Sheets\StockInSheet($meta, $data['stockIn']), 'Stock-In-Restocking'],
+            'movement' => [new \App\Exports\Sheets\InventoryMovementSheet($meta, $data['movement']), 'Inventory-Movement'],
+            'batch-expiry' => [new \App\Exports\Sheets\BatchExpirySheet($meta, $data['batches']), 'Batch-Expiry'],
+            'low-stock' => [new \App\Exports\Sheets\LowStockSheet($meta, $data['lowStock']), 'Low-Stock-Report'],
+            default => abort(404, "Unknown report sheet [{$sheet}]."),
+        };
+
+        $filename = "JC66-{$label}-".now()->format('Y-m-d').'.xlsx';
+
+        return Excel::download($export, $filename);
+    }
+
+    /**
+     * Shared data builder for both the full workbook and single-sheet exports,
+     * so the queries only live in one place.
+     *
+     * @return array{0: array{period:string,generated_by:string,generated_date:string}, 1: array}
+     */
+    private function buildInventoryReportData(Request $request): array
+    {
+        $dateFrom = $request->date('date_from') ?? now()->startOfMonth();
+        $dateTo = $request->date('date_to') ?? now()->endOfDay();
+
+        $ingredients = Ingredient::query()
+            ->with('validBatches')
+            ->orderBy('name')
+            ->get();
+
+        // --- Sheet 1: Inventory Summary ---
+        $summaryRows = $ingredients->map(fn (Ingredient $i) => [
+            $i->name,
+            (float) $i->total_stock,
+            $i->unit,
+            $i->unit_cost !== null ? (float) $i->unit_cost : null,
+            $i->total_value,
+            (float) $i->minimum_stock,
+            Str::headline($i->status),
+        ])->all();
+
+        // --- Sheet 2: Stock-In / Restocking ---
+        $stockInLogs = InventoryLog::query()
+            ->with(['ingredient:id,name,unit', 'ingredientBatch'])
+            ->where('type', 'restock')
+            ->whereNotNull('ingredient_id')
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->latest()
+            ->get();
+
+        $stockInRows = $stockInLogs->map(fn (InventoryLog $log) => [
+            $log->created_at->format('Y-m-d H:i'),
+            $log->ingredient?->name ?? '—',
+            $log->ingredient_batch_id,
+            (float) $log->quantity_change,
+            $log->ingredientBatch?->unit ?? $log->ingredient?->unit ?? '',
+            $log->ingredientBatch?->received_date?->format('Y-m-d') ?? '—',
+            $log->ingredientBatch?->expiry_date?->format('Y-m-d') ?? '—',
+            $log->ingredientBatch?->total_cost,
+            $log->note ?? '—',
+        ])->all();
+
+        // --- Sheet 3: Inventory Movement (all log types) ---
+        $movementLogs = InventoryLog::query()
+            ->with(['ingredient:id,name,unit', 'product:id,name'])
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->latest()
+            ->get();
+
+        $movementRows = $movementLogs->map(fn (InventoryLog $log) => [
+            $log->created_at->format('Y-m-d H:i'),
+            $log->ingredient?->name ?? $log->product?->name ?? '—',
+            Str::headline($log->type),
+            (float) $log->quantity_change,
+            $log->ingredient?->unit ?? 'pcs',
+            $log->note ?? '—',
+        ])->all();
+
+        // --- Sheet 4: Batch & Expiry (all batches still holding stock) ---
+        $batches = IngredientBatch::query()
+            ->with('ingredient:id,name')
+            ->where('remaining_quantity', '>', 0)
+            ->orderByRaw('expiry_date IS NULL, expiry_date ASC')
+            ->get();
+
+        $batchRows = $batches->map(fn (IngredientBatch $b) => [
+            $b->ingredient?->name ?? '—',
+            $b->id,
+            $b->received_date?->format('Y-m-d') ?? '—',
+            $b->expiry_date?->format('Y-m-d') ?? '—',
+            (float) $b->remaining_quantity,
+            $b->unit,
+            Str::headline($b->status),
+        ])->all();
+
+        // --- Sheet 5: Low Stock Report ---
+        $lowStockRows = $ingredients
+            ->filter(fn (Ingredient $i) => in_array($i->status, ['low_stock', 'out_of_stock'], true))
+            ->map(function (Ingredient $i) {
+                $shortage = max((float) $i->minimum_stock - (float) $i->total_stock, 0);
+
+                return [
+                    $i->name,
+                    (float) $i->total_stock,
+                    $i->unit,
+                    (float) $i->minimum_stock,
+                    round($shortage, 2),
+                    round($shortage, 2),
+                    Str::headline($i->status),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $meta = [
+            'period' => $dateFrom->format('M j, Y').' - '.$dateTo->format('M j, Y'),
+            'generated_by' => $request->user()?->name ?? 'Manager',
+            'generated_date' => now()->format('M j, Y g:i A'),
+        ];
+
+        return [$meta, [
+            'summary' => $summaryRows,
+            'stockIn' => $stockInRows,
+            'movement' => $movementRows,
+            'batches' => $batchRows,
+            'lowStock' => $lowStockRows,
+        ]];
     }
 
     /**
