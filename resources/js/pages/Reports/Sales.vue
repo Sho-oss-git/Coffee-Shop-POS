@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
-import { Printer, FileSpreadsheet, FileText } from 'lucide-vue-next';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { Printer, FileSpreadsheet, FileText, ChevronDown } from 'lucide-vue-next';
 
 interface Summary {
     total_sales: number;
@@ -100,11 +100,30 @@ function exportUrl(kind: 'excel' | 'word') {
     return route(routeName, { period: period.value, date: date.value });
 }
 
+// ---- Export dropdown ----
+const exportMenuOpen = ref(false);
+const exportMenuRef = ref<HTMLElement | null>(null);
+
+function toggleExportMenu() {
+    exportMenuOpen.value = !exportMenuOpen.value;
+}
+
+function closeExportMenu(e: MouseEvent) {
+    if (exportMenuRef.value && !exportMenuRef.value.contains(e.target as Node)) {
+        exportMenuOpen.value = false;
+    }
+}
+
+onMounted(() => document.addEventListener('click', closeExportMenu));
+onUnmounted(() => document.removeEventListener('click', closeExportMenu));
+
 function exportExcel() {
+    exportMenuOpen.value = false;
     window.location.href = exportUrl('excel');
 }
 
 function exportWord() {
+    exportMenuOpen.value = false;
     window.location.href = exportUrl('word');
 }
 </script>
@@ -148,21 +167,36 @@ function exportWord() {
                         Print
                     </button>
 
-                    <button
-                        @click="exportExcel"
-                        class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
-                    >
-                        <FileSpreadsheet class="h-4 w-4" />
-                        Export Excel
-                    </button>
+                    <div ref="exportMenuRef" class="relative">
+                        <button
+                            @click="toggleExportMenu"
+                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                        >
+                            <FileSpreadsheet class="h-4 w-4" />
+                            Export
+                            <ChevronDown class="h-3.5 w-3.5 transition-transform" :class="exportMenuOpen ? 'rotate-180' : ''" />
+                        </button>
 
-                    <button
-                        @click="exportWord"
-                        class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
-                    >
-                        <FileText class="h-4 w-4" />
-                        Export Word
-                    </button>
+                        <div
+                            v-if="exportMenuOpen"
+                            class="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-md border bg-popover shadow-md"
+                        >
+                            <button
+                                @click="exportExcel"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                            >
+                                <FileSpreadsheet class="h-4 w-4" />
+                                Export as Excel
+                            </button>
+                            <button
+                                @click="exportWord"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                            >
+                                <FileText class="h-4 w-4" />
+                                Export as Word
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -94,6 +94,52 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports/sales', [TransactionController::class, 'salesReport'])
             ->name('reports.sales');
 
+        // ----------------------------------------------------
+        // SALES REPORT — FULL EXCEL
+        // ----------------------------------------------------
+
+        Route::get(
+            'reports/sales/export',
+            [TransactionController::class, 'exportSales']
+        )->name('reports.sales.export');
+
+        // ----------------------------------------------------
+        // SALES REPORT — FULL WORD
+        // ----------------------------------------------------
+
+        Route::get(
+            'reports/sales/export/word',
+            [TransactionController::class, 'exportSalesWord']
+        )->name('reports.sales.export.word');
+
+        // ----------------------------------------------------
+        // SALES REPORT — SINGLE WORD SECTION
+        // ----------------------------------------------------
+
+        Route::get(
+            'reports/sales/export/word/{sheet}',
+            [TransactionController::class, 'exportSalesWordSection']
+        )
+            ->where(
+                'sheet',
+                'summary|transaction-log|product-sales|payment-summary|sales-by-period'
+            )
+            ->name('reports.sales.export.word.sheet');
+
+        // ----------------------------------------------------
+        // SALES REPORT — SINGLE EXCEL SECTION
+        // ----------------------------------------------------
+
+        Route::get(
+            'reports/sales/export/{sheet}',
+            [TransactionController::class, 'exportSalesSheet']
+        )
+            ->where(
+                'sheet',
+                'summary|transaction-log|product-sales|payment-summary|sales-by-period'
+            )
+            ->name('reports.sales.export.sheet');
+
         Route::get('sales-history', [TransactionController::class, 'history'])
             ->name('sales-history');
 

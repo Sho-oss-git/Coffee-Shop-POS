@@ -9,17 +9,18 @@ use App\Services\IngredientConsumptionService;
 use App\Http\Requests\RefundTransactionRequest;
 use App\Http\Requests\VoidTransactionRequest;
 use App\Services\ProductCostService;
+use App\Exports\SalesReportExport;
+use App\Exports\SalesReportWordExport;
+use App\Exports\Sheets\TransactionLogSheet;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use App\Exports\SalesReportExport;
-use App\Exports\SalesReportWordExport;
 
 class TransactionController extends Controller
 {
@@ -413,15 +414,23 @@ class TransactionController extends Controller
     }
 
     /**
-     * Base query for the Sales Report, Print, Excel, and Word exports —
-     * the single source of truth for what counts as "the selected
-     * period's sales". Only completed transactions, same as every other
-     * sales/dashboard method in this controller.
+     * Base query for the Sales Report, Print, Excel, and Word exports.
+     *
+     * By default only completed transactions are included (the single
+     * source of truth for KPIs/COGS/best sellers). Pass $allStatuses to
+     * also include refunded/voided transactions — used for the
+     * Transaction Log, which must show them per spec, even though they
+     * don't count toward Total Sales.
      */
-    private function salesPeriodQuery(string $period, string $date)
+    private function salesPeriodQuery(string $period, string $date, bool $allStatuses = false)
     {
-        $query = Transaction::with(['items.product:id,category', 'user'])
-            ->where('status', 'completed');
+        $query = Transaction::with(['items.product:id,category', 'user']);
+
+        if ($allStatuses) {
+            $query->whereIn('status', ['completed', 'refunded', 'voided']);
+        } else {
+            $query->where('status', 'completed');
+        }
 
         switch ($period) {
             case 'monthly':
@@ -472,7 +481,7 @@ class TransactionController extends Controller
 
     /**
      * Every product sold in the period, richest-first by quantity.
-     * Used for bestSellers (top 10) and the full Product Sales sheet.
+     * Used for the Best Selling Items table on the Sales Report page.
      */
     private function productBreakdown($allItems)
     {
@@ -536,46 +545,11 @@ class TransactionController extends Controller
     }
 
     /**
-     * Daily → hourly buckets, Monthly → daily buckets, Yearly → monthly
-     * buckets — a natural drill-down for whichever period was selected.
+     * Rows for the Transaction Log sheet/section. Includes completed,
+     * refunded, and voided transactions (spec section 13) with a Notes
+     * column explaining the refund/void — but callers must only sum
+     * "Completed" rows toward Total Sales.
      */
-    private function salesPeriodBreakdown(string $period, $transactions): array
-    {
-        $groupFn = match ($period) {
-            'monthly' => fn ($t) => $t->created_at->format('Y-m-d'),
-            'yearly' => fn ($t) => $t->created_at->format('Y-m'),
-            default => fn ($t) => $t->created_at->format('Y-m-d H:00'),
-        };
-
-        $labelFn = match ($period) {
-            'monthly' => fn ($group) => $group->first()->created_at->format('M j, Y'),
-            'yearly' => fn ($group) => $group->first()->created_at->format('F Y'),
-            default => fn ($group) => $group->first()->created_at->format('g:00 A'),
-        };
-
-        return $transactions
-            ->groupBy($groupFn)
-            ->sortKeys()
-            ->map(function ($group) use ($labelFn) {
-                $items = $group->flatMap->items;
-                $revenue = (float) $group->sum('total');
-                $cogs = (float) $items->whereNotNull('cogs')->sum('cogs');
-                $profit = round($revenue - $cogs, 2);
-
-                return [
-                    'period' => $labelFn($group),
-                    'transactions' => $group->count(),
-                    'items_sold' => (int) $items->sum('quantity'),
-                    'sales' => round($revenue, 2),
-                    'cogs' => round($cogs, 2),
-                    'gross_profit' => $profit,
-                    'gross_margin' => $revenue > 0 ? round(($profit / $revenue) * 100, 2) : 0.0,
-                ];
-            })
-            ->values()
-            ->all();
-    }
-
     private function transactionLogRows($transactions): array
     {
         return $transactions->map(fn ($t) => [
@@ -591,42 +565,45 @@ class TransactionController extends Controller
             (float) $t->change,
             (float) $t->total,
             Str::headline($t->status),
+            $this->transactionNote($t),
             $t->created_at->format('Y-m-d H:i:s'),
         ])->all();
     }
 
     /**
-     * Shared data builder for Excel + Word, both full report and
-     * individual sections — mirrors buildInventoryReportData() exactly.
+     * Refund/void reason shown in the Transaction Log's Notes column.
+     * Empty for completed transactions.
+     */
+    private function transactionNote(Transaction $t): string
+    {
+        return match ($t->status) {
+            'refunded' => trim('Refund: ₱'.number_format((float) ($t->refund_amount ?? 0), 2).' — '.($t->refund_reason ?? 'No reason given')),
+            'voided' => trim('Void: '.($t->void_reason ?? 'No reason given')),
+            default => '—',
+        };
+    }
+
+    /**
+     * Shared data builder for the Sales Report Excel + Word exports.
+     * KPIs stay completed-only (single source of truth, matches the UI);
+     * the Transaction Log additionally includes refunded/voided rows.
      *
-     * @return array{0: array{period:string,generated_by:string,generated_date:string}, 1: array}
+     * @return array{0: array{period:string,generated_by:string,generated_date:string}, 1: array{summary:array,transactionLog:array}}
      */
     private function buildSalesReportData(Request $request): array
     {
         $period = $request->input('period', 'daily');
         $date = $request->input('date', now()->toDateString());
 
+        // Completed-only — drives KPIs/summary, matching the UI exactly.
         $transactions = $this->salesPeriodQuery($period, $date)->orderBy('created_at')->get();
         $allItems = $transactions->flatMap->items;
-
         $summary = $this->summarizeSales($transactions, $allItems);
-        $productBreakdown = $this->productBreakdown($allItems);
-        $paymentSummary = $this->paymentMethodSummary($transactions, (float) $summary['total_sales']);
-        $orderTypeSummary = $this->orderTypeSummary($transactions);
-        $periodBreakdown = $this->salesPeriodBreakdown($period, $transactions);
 
-        $paymentSummaryRows = collect($paymentSummary)->map(fn ($p) => [
-            $p['label'], $p['transactions'], $p['total_sales'], $p['percentage'],
-        ])->all();
-
-        $salesByPeriodRows = collect($periodBreakdown)->map(fn ($p) => [
-            $p['period'], $p['transactions'], $p['items_sold'], $p['sales'], $p['cogs'], $p['gross_profit'], $p['gross_margin'],
-        ])->all();
-
-        $productRows = $productBreakdown->map(fn ($p) => [
-            $p['name'], $p['category'], $p['quantity'], $p['unit_price'],
-            $p['total'], $p['cogs'], $p['gross_profit'], $p['margin'],
-        ])->all();
+        // All statuses — the Transaction Log must show refunds/voids too.
+        $logTransactions = $this->salesPeriodQuery($period, $date, allStatuses: true)
+            ->orderBy('created_at')
+            ->get();
 
         $meta = [
             'period' => ucfirst($period).' — '.$this->salesPeriodLabel($period, $date),
@@ -638,21 +615,13 @@ class TransactionController extends Controller
             $meta,
             [
                 'summary' => $summary,
-                'paymentSummary' => $paymentSummary->all(),
-                'paymentSummaryRows' => $paymentSummaryRows,
-                'orderTypeSummary' => $orderTypeSummary->all(),
-                'bestSellers' => $productBreakdown->take(10)->values()->map(fn ($p) => [
-                    'name' => $p['name'], 'quantity' => $p['quantity'], 'total' => $p['total'],
-                ])->all(),
-                'transactionLog' => $this->transactionLogRows($transactions),
-                'productSales' => $productRows,
-                'salesByPeriodRows' => $salesByPeriodRows,
+                'transactionLog' => $this->transactionLogRows($logTransactions),
             ],
         ];
     }
 
     /**
-     * Downloads the full 5-sheet Sales Report as .xlsx.
+     * Downloads the Sales Report (Transaction Log, with Total Sales) as .xlsx.
      */
     public function exportSales(Request $request): BinaryFileResponse
     {
@@ -664,18 +633,15 @@ class TransactionController extends Controller
     }
 
     /**
-     * Downloads a single Sales Report section as .xlsx.
+     * Downloads a single Sales Report section as .xlsx. Currently only
+     * "transaction-log" exists as a section.
      */
     public function exportSalesSheet(Request $request, string $sheet): BinaryFileResponse
     {
         [$meta, $data] = $this->buildSalesReportData($request);
 
         [$export, $label] = match ($sheet) {
-            'summary' => [new \App\Exports\Sheets\SalesSummarySheet($meta, $data), 'Sales-Summary'],
-            'transaction-log' => [new \App\Exports\Sheets\TransactionLogSheet($meta, $data['transactionLog']), 'Transaction-Log'],
-            'product-sales' => [new \App\Exports\Sheets\ProductSalesSheet($meta, $data['productSales']), 'Product-Sales'],
-            'payment-summary' => [new \App\Exports\Sheets\PaymentSummarySheet($meta, $data['paymentSummaryRows']), 'Payment-Summary'],
-            'sales-by-period' => [new \App\Exports\Sheets\SalesByPeriodSheet($meta, $data['salesByPeriodRows']), 'Sales-By-Period'],
+            'transaction-log' => [new TransactionLogSheet($meta, $data['transactionLog']), 'Transaction-Log'],
             default => abort(404, "Unknown report sheet [{$sheet}]."),
         };
 
@@ -685,7 +651,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * Downloads the full 5-section Sales Report as Word.
+     * Downloads the Sales Report (Transaction Log, with Total Sales) as Word.
      */
     public function exportSalesWord(Request $request): BinaryFileResponse
     {
@@ -701,20 +667,15 @@ class TransactionController extends Controller
     }
 
     /**
-     * Downloads a single Sales Report section as Word.
-     *
-     * Supported sections: summary|transaction-log|product-sales|payment-summary|sales-by-period
+     * Downloads a single Sales Report section as Word. Currently only
+     * "transaction-log" exists as a section.
      */
     public function exportSalesWordSection(Request $request, string $sheet): BinaryFileResponse
     {
         [$meta, $data] = $this->buildSalesReportData($request);
 
         $labels = [
-            'summary' => 'Sales-Summary',
             'transaction-log' => 'Transaction-Log',
-            'product-sales' => 'Product-Sales',
-            'payment-summary' => 'Payment-Summary',
-            'sales-by-period' => 'Sales-By-Period',
         ];
 
         if (! isset($labels[$sheet])) {
@@ -730,6 +691,12 @@ class TransactionController extends Controller
             ->deleteFileAfterSend(true);
     }
 
+    /**
+     * Transaction History for the cashier POS interface — shows only the
+     * transactions processed by the currently authenticated cashier (not
+     * every cashier's sales; that broader view already exists for
+     * Admin/Manager at history() / "Sales History").
+     */
     public function cashierHistory(Request $request)
     {
         $validated = $request->validate([
