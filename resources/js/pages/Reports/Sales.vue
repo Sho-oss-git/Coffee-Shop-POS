@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import DailyMonthlyYearly from '@/components/DailyMonthlyYearly.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Printer, FileSpreadsheet, FileText, ChevronDown } from 'lucide-vue-next';
@@ -78,11 +79,6 @@ function applyFilters() {
     );
 }
 
-function setPeriod(p: 'daily' | 'monthly' | 'yearly') {
-    period.value = p;
-    applyFilters();
-}
-
 function formatCurrency(value: number | string) {
     return `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -140,32 +136,15 @@ function exportWord() {
                 </div>
 
                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                    <div class="flex rounded-md border overflow-hidden">
-                        <button
-                            v-for="p in ['daily', 'monthly', 'yearly'] as const"
-                            :key="p"
-                            @click="setPeriod(p)"
-                            class="px-3 py-1.5 text-sm capitalize"
-                            :class="period === p ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'"
-                        >
-                            {{ p }}
-                        </button>
-                    </div>
+                    <DailyMonthlyYearly v-model:period="period" v-model:date="date" @change="applyFilters" />
 
-                    <input
-                        v-model="date"
-                        :type="period === 'yearly' ? 'number' : period === 'monthly' ? 'month' : 'date'"
-                        @change="applyFilters"
-                        class="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground dark:[color-scheme:dark] sm:w-auto"
-                    />
-
-                    <button
+                    <!-- <button
                         @click="printReport"
                         class="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90"
                     >
                         <Printer class="h-4 w-4" />
                         Print
-                    </button>
+                    </button> -->
 
                     <div ref="exportMenuRef" class="relative">
                         <button
@@ -173,7 +152,7 @@ function exportWord() {
                             class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
                         >
                             <FileSpreadsheet class="h-4 w-4" />
-                            Export
+                            Export File
                             <ChevronDown class="h-3.5 w-3.5 transition-transform" :class="exportMenuOpen ? 'rotate-180' : ''" />
                         </button>
 

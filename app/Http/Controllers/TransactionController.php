@@ -32,22 +32,44 @@ class TransactionController extends Controller
     public function dashboard(Request $request)
     {
         $today = now()->toDateString();
-        $transactions = Transaction::with(['user:id,name', 'items'])
-            ->where('status', 'completed')
-            ->whereDate('created_at', $today)
-            ->latest()
-            ->get();
 
+        $period = $request->input('period', 'daily');
+        if (! in_array($period, ['daily', 'monthly', 'yearly'], true)) {
+            $period = 'daily';
+        }
+
+        $anchor = $this->resolvePeriodAnchor($period, $request->input('date', $today));
+
+        // Normalize into the same format salesPeriodQuery() already expects
+        // for each period (daily: Y-m-d, monthly: Y-m, yearly: Y).
+        $normalizedDate = match ($period) {
+            'monthly' => $anchor->format('Y-m'),
+            'yearly' => $anchor->format('Y'),
+            default => $anchor->format('Y-m-d'),
+        };
+
+        $transactions = $this->salesPeriodQuery($period, $normalizedDate)->get();
         $items = $transactions->flatMap->items;
+
+        // "Recent transactions" stays a live/global feed (not period-scoped) —
+        // it's meant to show what's happening right now, regardless of which
+        // period the trend chart is looking at.
+        $recentTransactions = Transaction::with('user:id,name')
+            ->where('status', 'completed')
+            ->latest()
+            ->take(6)
+            ->get();
 
         return Inertia::render('Dashboard', [
             'summary' => [
                 'sales' => round((float) $transactions->sum('total'), 2),
                 'transactions' => $transactions->count(),
                 'items' => (int) $items->sum('quantity'),
-                'average_sale' => $transactions->count() ? round((float) $transactions->sum('total') / $transactions->count(), 2) : 0,
+                'average_sale' => $transactions->count()
+                    ? round((float) $transactions->sum('total') / $transactions->count(), 2)
+                    : 0,
             ],
-            'recentTransactions' => $transactions->take(6)->map(fn ($transaction) => [
+            'recentTransactions' => $recentTransactions->map(fn ($transaction) => [
                 'id' => $transaction->id,
                 'time' => $transaction->created_at->format('g:i A'),
                 'cashier' => $transaction->user?->name ?? 'Unknown',
@@ -57,6 +79,11 @@ class TransactionController extends Controller
             'pendingRequests' => ActionRequest::where('status', 'pending')->count(),
             'productCount' => Product::where('is_available', true)->count(),
             'date' => $today,
+            'salesTrend' => $this->buildDashboardTrend($period, $anchor, $transactions),
+            'filters' => [
+                'period' => $period,
+                'date' => $normalizedDate,
+            ],
         ]);
     }
 
@@ -458,6 +485,83 @@ class TransactionController extends Controller
             'yearly' => (string) $date,
             default => \Carbon\Carbon::parse($date)->format('F j, Y'),
         };
+    }
+
+    /**
+     * Turns whatever "date" the client sent (a full date, "YYYY-MM", a bare
+     * year, or nothing at all) into a concrete Carbon instance representing
+     * that period, regardless of exact format. Falls back to "now" if the
+     * input can't be parsed at all.
+     */
+    private function resolvePeriodAnchor(string $period, string $date): \Carbon\Carbon
+    {
+        try {
+            return match ($period) {
+                'monthly' => preg_match('/^\d{4}-\d{2}$/', $date)
+                    ? \Carbon\Carbon::createFromFormat('Y-m-d', $date.'-01')
+                    : \Carbon\Carbon::parse($date)->startOfMonth(),
+                'yearly' => preg_match('/^\d{4}$/', $date)
+                    ? \Carbon\Carbon::createFromDate((int) $date, 1, 1)
+                    : \Carbon\Carbon::parse($date)->startOfYear(),
+                default => \Carbon\Carbon::parse($date),
+            };
+        } catch (\Exception) {
+            return now();
+        }
+    }
+
+    /**
+     * Dashboard sales trend — hourly for daily, day-of-month for monthly,
+     * month-of-year for yearly. Mirrors the "Sales Trend Today" logic from
+     * saleTransaction(), generalized across periods. The frontend chart is
+     * period-agnostic, so any of these shapes render fine as-is.
+     */
+    private function buildDashboardTrend(string $period, \Carbon\Carbon $anchor, $transactions): \Illuminate\Support\Collection
+    {
+        return match ($period) {
+            'monthly' => $this->trendByDayOfMonth($anchor, $transactions),
+            'yearly' => $this->trendByMonthOfYear($anchor, $transactions),
+            default => $this->trendByHour($transactions),
+        };
+    }
+
+    private function trendByHour($transactions): \Illuminate\Support\Collection
+    {
+        $salesByHour = $transactions
+            ->groupBy(fn ($t) => (int) $t->created_at->format('G'))
+            ->map(fn ($group) => round((float) $group->sum('total'), 2));
+
+        return collect(range(6, 21))->map(fn ($hour) => [
+            'hour' => $hour,
+            'label' => \Carbon\Carbon::createFromTime($hour)->format('g A'),
+            'sales' => $salesByHour->get($hour, 0),
+        ])->values();
+    }
+
+    private function trendByDayOfMonth(\Carbon\Carbon $anchor, $transactions): \Illuminate\Support\Collection
+    {
+        $salesByDay = $transactions
+            ->groupBy(fn ($t) => (int) $t->created_at->format('j'))
+            ->map(fn ($group) => round((float) $group->sum('total'), 2));
+
+        return collect(range(1, $anchor->daysInMonth))->map(fn ($day) => [
+            'hour' => $day, // reused only as a unique point key by the frontend
+            'label' => (string) $day,
+            'sales' => $salesByDay->get($day, 0),
+        ])->values();
+    }
+
+    private function trendByMonthOfYear(\Carbon\Carbon $anchor, $transactions): \Illuminate\Support\Collection
+    {
+        $salesByMonth = $transactions
+            ->groupBy(fn ($t) => (int) $t->created_at->format('n'))
+            ->map(fn ($group) => round((float) $group->sum('total'), 2));
+
+        return collect(range(1, 12))->map(fn ($month) => [
+            'hour' => $month,
+            'label' => \Carbon\Carbon::createFromDate($anchor->year, $month, 1)->format('M'),
+            'sales' => $salesByMonth->get($month, 0),
+        ])->values();
     }
 
     private function summarizeSales($transactions, $allItems): array

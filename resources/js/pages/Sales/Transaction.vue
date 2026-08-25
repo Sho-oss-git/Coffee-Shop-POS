@@ -12,12 +12,6 @@ interface Summary {
     gross_profit: number;
 }
 
-interface TrendPoint {
-    hour: number;
-    label: string;
-    sales: number;
-}
-
 interface RecentTransaction {
     id: number;
     time: string;
@@ -33,7 +27,7 @@ interface TopProduct {
 }
 
 interface CashierSales {
-        cashier: string;
+    cashier: string;
     transaction_count: number;
     sales: number;
 }
@@ -47,7 +41,6 @@ interface PaymentMethodBreakdown {
 
 const props = defineProps<{
     summary: Summary;
-    salesTrend: TrendPoint[];
     recentTransactions: RecentTransaction[];
     topProducts: TopProduct[];
     salesByCashier: CashierSales[];
@@ -76,46 +69,6 @@ const totalPaymentSales = computed(() => props.salesByPaymentMethod.reduce((sum,
 function paymentSharePercent(total: number) {
     return totalPaymentSales.value > 0 ? Math.round((total / totalPaymentSales.value) * 100) : 0;
 }
-
-// ---- Lightweight inline SVG line chart (no external charting lib) ----
-const chartWidth = 760;
-const chartHeight = 220;
-const paddingX = 32;
-const paddingY = 24;
-
-const maxSale = computed(() => Math.max(...props.salesTrend.map((p) => p.sales), 1));
-
-const points = computed(() => {
-    const n = props.salesTrend.length;
-    if (n <= 1) return [];
-    const usableWidth = chartWidth - paddingX * 2;
-    const usableHeight = chartHeight - paddingY * 2;
-
-    return props.salesTrend.map((p, i) => {
-        const x = paddingX + (i / (n - 1)) * usableWidth;
-        const y = paddingY + usableHeight - (p.sales / maxSale.value) * usableHeight;
-        return { x, y, ...p };
-    });
-});
-
-const linePath = computed(() =>
-    points.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '),
-);
-
-const areaPath = computed(() => {
-    if (!points.value.length) return '';
-    const last = points.value[points.value.length - 1];
-    const first = points.value[0];
-    return `${linePath.value} L ${last.x.toFixed(1)} ${chartHeight - paddingY} L ${first.x.toFixed(1)} ${chartHeight - paddingY} Z`;
-});
-
-// Only label every 2nd hour tick to avoid crowding
-const visibleTicks = computed(() => points.value.filter((_, i) => i % 2 === 0));
-
-const peakHour = computed(() => {
-    if (!props.salesTrend.length) return null;
-    return props.salesTrend.reduce((best, p) => (p.sales > best.sales ? p : best), props.salesTrend[0]);
-});
 </script>
 
 <template>
@@ -182,73 +135,8 @@ const peakHour = computed(() => {
                 <p v-else class="p-6 text-center text-sm text-muted-foreground">No sales yet today</p>
             </div>
 
-            <!-- 2. Sales Trend Today -->
-            <div class="rounded-lg border">
-                <div class="flex items-center justify-between border-b p-4">
-                    <h2 class="font-semibold">Sales Trend Today</h2>
-                    <p v-if="peakHour && peakHour.sales > 0" class="text-xs text-muted-foreground">
-                        Peak hour: <span class="font-medium text-foreground">{{ peakHour.label }}</span>
-                        ({{ formatCurrency(peakHour.sales) }})
-                    </p>
-                </div>
-                <div class="p-4">
-                    <svg
-                        v-if="salesTrend.length > 1"
-                        :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
-                        class="w-full h-auto"
-                        preserveAspectRatio="xMidYMid meet"
-                    >
-                        <!-- baseline -->
-                        <line
-                            :x1="paddingX"
-                            :y1="chartHeight - paddingY"
-                            :x2="chartWidth - paddingX"
-                            :y2="chartHeight - paddingY"
-                            stroke="currentColor"
-                            class="text-border"
-                            stroke-width="1"
-                        />
-
-                        <!-- filled area under the line -->
-                        <path :d="areaPath" fill="currentColor" class="text-primary/10" />
-
-                        <!-- trend line -->
-                        <path :d="linePath" fill="none" stroke="currentColor" class="text-primary" stroke-width="2" />
-
-                        <!-- points -->
-                        <circle
-                            v-for="p in points"
-                            :key="p.hour"
-                            :cx="p.x"
-                            :cy="p.y"
-                            r="3"
-                            fill="currentColor"
-                            class="text-primary"
-                        >
-                            <title>{{ p.label }} — {{ formatCurrency(p.sales) }}</title>
-                        </circle>
-
-                        <!-- x-axis labels -->
-                        <text
-                            v-for="p in visibleTicks"
-                            :key="`label-${p.hour}`"
-                            :x="p.x"
-                            :y="chartHeight - 4"
-                            text-anchor="middle"
-                            class="fill-muted-foreground"
-                            font-size="10"
-                        >
-                            {{ p.label }}
-                        </text>
-                    </svg>
-                    <p v-else class="py-8 text-center text-sm text-muted-foreground">
-                        Not enough data yet to show a trend.
-                    </p>
-                </div>
-            </div>
-
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <!-- 3. Live / Recent Transactions -->
+                <!-- 2. Live / Recent Transactions -->
                 <div class="min-w-0 overflow-hidden rounded-lg border">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b p-4">
                         <h2 class="font-semibold">Recent Transactions</h2>
@@ -289,7 +177,7 @@ const peakHour = computed(() => {
                     </div>
                 </div>
 
-                <!-- 4. Current Best Sellers -->
+                <!-- 3. Current Best Sellers -->
                 <div class="rounded-lg border">
                     <div class="border-b p-4">
                         <h2 class="font-semibold">Today's Top Products</h2>
@@ -313,7 +201,7 @@ const peakHour = computed(() => {
                 </div>
             </div>
 
-            <!-- 5. Sales by Cashier -->
+            <!-- 4. Sales by Cashier -->
             <div class="rounded-lg border">
                 <div class="border-b p-4">
                     <h2 class="font-semibold">Sales by Cashier</h2>
