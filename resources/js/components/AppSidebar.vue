@@ -26,16 +26,9 @@ const { role } = usePermissions();
 
 type Role = 'admin' | 'manager' | 'cashier';
 type RoleNavItem = NavItem & { roles?: Role[] };
-// label can be a plain string (same for everyone) or a per-role map,
-// e.g. { admin: 'Admin', manager: 'Account', cashier: 'Account' }.
 type RoleNavGroup = { label: string | Partial<Record<Role, string>>; items: RoleNavItem[] };
 const page = usePage<{ pending_action_requests?: number }>();
 
-// Items are now organized as flat, labeled sections instead of
-// title -> nested items[] dropdowns. Each item links directly;
-// former sub-pages (e.g. "Sales Transaction") are now their own
-// top-level entries inside a section, matching the flat pill-list
-// sidebar design.
 const allNavGroups: RoleNavGroup[] = [
     {
         label: 'Overview',
@@ -76,10 +69,6 @@ const allNavGroups: RoleNavGroup[] = [
                 roles: ['admin', 'manager'],
             },
             {
-                // Cashier gets its own direct link — the admin/manager "Sales History"
-                // above points at /sales-history, which a cashier can't access
-                // (role:admin,manager middleware). This links straight to the
-                // cashier-scoped history of their own transactions instead.
                 title: 'Transaction History',
                 href: route('cashier.transactions.history'),
                 icon: Receipt,
@@ -169,7 +158,11 @@ const mainNavGroups = computed<NavGroup[]>(() =>
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar
+        collapsible="icon"
+        variant="inset"
+        class="border-none bg-sidebar text-sidebar-foreground"
+    >
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>

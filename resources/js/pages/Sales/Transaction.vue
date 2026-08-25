@@ -2,6 +2,17 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import {
+    ArrowUpRight,
+    Banknote,
+    Boxes,
+    ClipboardList,
+    Package,
+    ShoppingBag,
+    Sparkles,
+    TrendingUp,
+    Wallet,
+} from 'lucide-vue-next';
 
 interface Summary {
     total_sales: number;
@@ -48,7 +59,7 @@ const props = defineProps<{
     date: string;
 }>();
 
-function formatCurrency(value: number | string) {
+function money(value: number | string) {
     return `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -56,175 +67,214 @@ function formatDateLabel(value: string) {
     return new Date(value).toLocaleDateString('en-PH', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
 
-function paymentIcon(method: string | null) {
-    return method === 'gcash' ? '' : '';
-}
-
 function paymentLabel(method: string | null) {
     return method === 'gcash' ? 'GCash' : 'Cash';
 }
 
-const totalPaymentSales = computed(() => props.salesByPaymentMethod.reduce((sum, p) => sum + p.total, 0));
+// ---- Highlight banner: one honest, data-backed line ----
+const highlight = computed(() => {
+    const parts: string[] = [];
+    parts.push(`${props.summary.transaction_count} transaction${props.summary.transaction_count === 1 ? '' : 's'} recorded so far`);
+    if (props.topProducts.length) {
+        parts.push(`top seller: ${props.topProducts[0].name}`);
+    }
+    return parts.join(' · ');
+});
 
-function paymentSharePercent(total: number) {
-    return totalPaymentSales.value > 0 ? Math.round((total / totalPaymentSales.value) * 100) : 0;
-}
+// ---- Stat cards, styled like the dashboard's icon metric cards ----
+const metrics = computed(() => [
+    { label: "Today's sales", value: money(props.summary.total_sales), icon: Banknote, tone: 'text-emerald-600', surface: 'bg-emerald-500/10' },
+    { label: 'Transactions', value: props.summary.transaction_count, icon: ShoppingBag, tone: 'text-sky-600', surface: 'bg-sky-500/10' },
+    { label: 'Items sold', value: props.summary.items_sold, icon: Package, tone: 'text-amber-600', surface: 'bg-amber-500/10' },
+    { label: 'Average sale', value: money(props.summary.average_sale), icon: TrendingUp, tone: 'text-violet-600', surface: 'bg-violet-500/10' },
+    { label: 'COGS', value: money(props.summary.total_cogs), icon: Boxes, tone: 'text-orange-600', surface: 'bg-orange-500/10' },
+    { label: 'Gross profit', value: money(props.summary.gross_profit), icon: TrendingUp, tone: 'text-teal-600', surface: 'bg-teal-500/10' },
+]);
+
+// ---- Payment methods donut, same visual language as the dashboard ----
+const totalPaymentSales = computed(() => props.salesByPaymentMethod.reduce((sum, p) => sum + p.total, 0));
+const totalPaymentCount = computed(() => props.salesByPaymentMethod.reduce((sum, p) => sum + p.count, 0));
+
+const cashEntry = computed(() => props.salesByPaymentMethod.find((p) => p.method !== 'gcash'));
+const gcashEntry = computed(() => props.salesByPaymentMethod.find((p) => p.method === 'gcash'));
+
+const cashPercent = computed(() =>
+    totalPaymentSales.value > 0 ? Math.round(((cashEntry.value?.total ?? 0) / totalPaymentSales.value) * 100) : 0,
+);
+const gcashPercent = computed(() => (totalPaymentCount.value ? 100 - cashPercent.value : 0));
+
+const donutGradient = computed(() => {
+    if (!totalPaymentSales.value) return 'conic-gradient(var(--muted) 0% 100%)';
+    return `conic-gradient(#059669 0% ${cashPercent.value}%, #f59e0b ${cashPercent.value}% 100%)`;
+});
 </script>
 
 <template>
     <Head title="Sale Transaction" />
 
     <AppLayout>
-        <div class="min-w-0 space-y-6 p-3 sm:p-4">
-            <div>
-                <h1 class="text-2xl font-semibold">Sales Monitoring</h1>
-                <p class="text-sm text-muted-foreground">{{ formatDateLabel(date) }} — live view of today's sales</p>
+        <div class="flex min-w-0 flex-col gap-6 bg-muted/20 p-3 sm:p-4 lg:p-6">
+            <!-- Header -->
+            <div class="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-muted-foreground">{{ formatDateLabel(date) }}</p>
+                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Sales Monitoring</h1>
+                    <p class="text-sm text-muted-foreground">Live view of today's sales.</p>
+                </div>
+                <Link
+                    :href="route('sales-history')"
+                    class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"
+                >
+                    View all transactions <ArrowUpRight class="h-4 w-4" />
+                </Link>
             </div>
 
-            <!-- 1. Today's Sales Overview -->
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Today's Sales</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.total_sales) }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Transactions</p>
-                    <p class="text-xl font-semibold">{{ summary.transaction_count }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Items Sold</p>
-                    <p class="text-xl font-semibold">{{ summary.items_sold }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Average Sale</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.average_sale) }}</p>
-                </div>
-                <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">COGS</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.total_cogs) }}</p>
-                </div>
-                <div class="rounded-lg border p-4 border-green-200 bg-green-50/50">
-                    <p class="text-xs text-muted-foreground">Gross Profit</p>
-                    <p class="text-xl font-semibold text-green-700">{{ formatCurrency(summary.gross_profit) }}</p>
-                </div>
-            </div>
-
-            <!-- 1b. Payment Methods (Cash vs GCash) -->
-            <div class="rounded-lg border">
-                <div class="border-b p-4">
-                    <h2 class="font-semibold">Payment Methods</h2>
-                </div>
-                <div v-if="salesByPaymentMethod.length" class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
-                    <div
-                        v-for="p in salesByPaymentMethod"
-                        :key="p.method"
-                        class="flex items-center justify-between rounded-lg border p-4"
-                    >
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl">{{ paymentIcon(p.method) }}</span>
-                            <div>
-                                <p class="text-sm font-medium">{{ p.label }}</p>
-                                <p class="text-xs text-muted-foreground">
-                                    {{ p.count }} {{ p.count === 1 ? 'sale' : 'sales' }} · {{ paymentSharePercent(p.total) }}% of today
-                                </p>
-                            </div>
-                        </div>
-                        <p class="text-lg font-semibold">{{ formatCurrency(p.total) }}</p>
+            <!-- Highlight banner -->
+            <div class="flex flex-col gap-4 rounded-xl bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 p-4 text-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                        <Sparkles class="h-5 w-5 text-amber-300" />
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold">Today's highlight</p>
+                        <p class="text-sm text-emerald-50/85">{{ highlight }}</p>
                     </div>
                 </div>
-                <p v-else class="p-6 text-center text-sm text-muted-foreground">No sales yet today</p>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <!-- 2. Live / Recent Transactions -->
-                <div class="min-w-0 overflow-hidden rounded-lg border">
+            <!-- Stat cards -->
+            <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
+                <div v-for="metric in metrics" :key="metric.label" class="flex flex-col justify-between rounded-xl border bg-background p-4 shadow-sm">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg" :class="metric.surface">
+                        <component :is="metric.icon" class="h-5 w-5" :class="metric.tone" />
+                    </span>
+                    <div class="mt-3">
+                        <p class="text-xl font-semibold">{{ metric.value }}</p>
+                        <p class="text-xs text-muted-foreground">{{ metric.label }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                <!-- Recent transactions -->
+                <section class="min-w-0 overflow-hidden rounded-xl border bg-background shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b p-4">
-                        <h2 class="font-semibold">Recent Transactions</h2>
-                        <Link :href="route('sales-history')" class="text-sm text-primary hover:underline">
-                            View All →
-                        </Link>
+                        <div>
+                            <h2 class="font-semibold">Recent Transactions</h2>
+                            <p class="text-xs text-muted-foreground">Latest sales as they come in</p>
+                        </div>
+                        <Link :href="route('sales-history')" class="text-sm text-primary hover:underline"> View All → </Link>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full min-w-[620px] text-sm">
-                        <thead class="bg-muted/50">
-                            <tr>
-                                <th class="p-2 text-left">Time</th>
-                                <th class="p-2 text-left">Transaction</th>
-                                <th class="p-2 text-left">Cashier</th>
-                                <th class="p-2 text-left">Payment</th>
-                                <th class="p-2 text-right">Total</th>
-                                <th class="p-2 text-left">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="t in recentTransactions" :key="t.id" class="border-t">
-                                <td class="p-2">{{ t.time }}</td>
-                                <td class="p-2">#{{ t.id }}</td>
-                                <td class="p-2">{{ t.cashier }}</td>
-                                <td class="p-2">
-                                    <span class="inline-flex items-center gap-1 text-xs">
-                                        {{ paymentIcon(t.payment_method) }} {{ paymentLabel(t.payment_method) }}
-                                    </span>
-                                </td>
-                                <td class="p-2 text-right">{{ formatCurrency(t.total) }}</td>
-                                <td class="p-2 capitalize">{{ t.status }}</td>
-                            </tr>
-                            <tr v-if="!recentTransactions.length">
-                                <td colspan="6" class="p-4 text-center text-muted-foreground">No transactions yet today</td>
-                            </tr>
-                        </tbody>
+                            <thead class="bg-muted/50">
+                                <tr>
+                                    <th class="p-2 text-left">Time</th>
+                                    <th class="p-2 text-left">Transaction</th>
+                                    <th class="p-2 text-left">Cashier</th>
+                                    <th class="p-2 text-left">Payment</th>
+                                    <th class="p-2 text-right">Total</th>
+                                    <th class="p-2 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="t in recentTransactions" :key="t.id" class="border-t">
+                                    <td class="p-2">{{ t.time }}</td>
+                                    <td class="p-2">#{{ t.id }}</td>
+                                    <td class="p-2">{{ t.cashier }}</td>
+                                    <td class="p-2">
+                                        <span class="inline-flex items-center gap-1 text-xs">
+                                            <Wallet class="h-3.5 w-3.5" :class="t.payment_method === 'gcash' ? 'text-amber-500' : 'text-emerald-600'" />
+                                            {{ paymentLabel(t.payment_method) }}
+                                        </span>
+                                    </td>
+                                    <td class="p-2 text-right">{{ money(t.total) }}</td>
+                                    <td class="p-2 capitalize">{{ t.status }}</td>
+                                </tr>
+                                <tr v-if="!recentTransactions.length">
+                                    <td colspan="6" class="p-4 text-center text-muted-foreground">No transactions yet today</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
-                </div>
+                </section>
 
-                <!-- 3. Current Best Sellers -->
-                <div class="rounded-lg border">
+                <!-- Payment methods -->
+                <section class="flex flex-col gap-4 rounded-xl border bg-background p-4 shadow-sm">
+                    <div>
+                        <h2 class="font-semibold">Payment methods</h2>
+                        <p class="text-xs text-muted-foreground">Today's transactions by method</p>
+                    </div>
+
+                    <div v-if="salesByPaymentMethod.length" class="flex flex-col items-center gap-4 py-2">
+                        <div class="relative h-36 w-36 rounded-full" :style="{ background: donutGradient }">
+                            <div class="absolute inset-[16px] flex flex-col items-center justify-center rounded-full bg-background">
+                                <span class="text-xl font-bold">{{ totalPaymentCount }}</span>
+                                <span class="text-[11px] text-muted-foreground">transactions</span>
+                            </div>
+                        </div>
+                        <div class="w-full space-y-2 text-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>Cash</span>
+                                <span class="font-medium">{{ cashEntry?.count ?? 0 }} ({{ cashPercent }}%) · {{ money(cashEntry?.total ?? 0) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>GCash</span>
+                                <span class="font-medium">{{ gcashEntry?.count ?? 0 }} ({{ gcashPercent }}%) · {{ money(gcashEntry?.total ?? 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p v-else class="py-8 text-center text-sm text-muted-foreground">No sales yet today</p>
+                </section>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-2">
+                <!-- Top products -->
+                <section class="rounded-xl border bg-background shadow-sm">
                     <div class="border-b p-4">
                         <h2 class="font-semibold">Today's Top Products</h2>
+                        <p class="text-xs text-muted-foreground">Best sellers so far today</p>
                     </div>
                     <ol class="divide-y">
-                        <li
-                            v-for="(product, index) in topProducts"
-                            :key="product.name"
-                            class="flex items-center justify-between p-3 text-sm"
-                        >
-                            <span>
-                                <span class="text-muted-foreground mr-2">{{ index + 1 }}.</span>
+                        <li v-for="(product, index) in topProducts" :key="product.name" class="flex items-center justify-between p-3 text-sm">
+                            <span class="flex items-center gap-3">
+                                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/10 text-xs font-semibold text-sky-600">
+                                    {{ index + 1 }}
+                                </span>
                                 {{ product.name }}
                             </span>
                             <span class="font-medium">{{ product.quantity }} sold</span>
                         </li>
-                        <li v-if="!topProducts.length" class="p-4 text-center text-sm text-muted-foreground">
-                            No sales yet today
-                        </li>
+                        <li v-if="!topProducts.length" class="p-4 text-center text-sm text-muted-foreground">No sales yet today</li>
                     </ol>
-                </div>
-            </div>
+                </section>
 
-            <!-- 4. Sales by Cashier -->
-            <div class="rounded-lg border">
-                <div class="border-b p-4">
-                    <h2 class="font-semibold">Sales by Cashier</h2>
-                </div>
-                <table class="w-full text-sm">
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">Cashier</th>
-                            <th class="p-2 text-right">Transactions</th>
-                            <th class="p-2 text-right">Sales</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="c in salesByCashier" :key="c.cashier" class="border-t">
-                            <td class="p-2">{{ c.cashier }}</td>
-                            <td class="p-2 text-right">{{ c.transaction_count }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(c.sales) }}</td>
-                        </tr>
-                        <tr v-if="!salesByCashier.length">
-                            <td colspan="3" class="p-4 text-center text-muted-foreground">No sales yet today</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <!-- Sales by cashier -->
+                <section class="rounded-xl border bg-background shadow-sm">
+                    <div class="border-b p-4">
+                        <h2 class="font-semibold">Sales by Cashier</h2>
+                        <p class="text-xs text-muted-foreground">Performance per cashier today</p>
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-muted/50">
+                            <tr>
+                                <th class="p-2 text-left">Cashier</th>
+                                <th class="p-2 text-right">Transactions</th>
+                                <th class="p-2 text-right">Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="c in salesByCashier" :key="c.cashier" class="border-t">
+                                <td class="p-2">{{ c.cashier }}</td>
+                                <td class="p-2 text-right">{{ c.transaction_count }}</td>
+                                <td class="p-2 text-right">{{ money(c.sales) }}</td>
+                            </tr>
+                            <tr v-if="!salesByCashier.length">
+                                <td colspan="3" class="p-4 text-center text-muted-foreground">No sales yet today</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
             </div>
         </div>
     </AppLayout>
