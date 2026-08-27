@@ -43,7 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('action-requests');
 
         Route::post('action-requests', [ActionRequestController::class, 'store'])
-            ->middleware('role:manager')
+            ->middleware('role:manager,cashier')
             ->name('action-requests.store');
 
         Route::patch('action-requests/{actionRequest}/review', [ActionRequestController::class, 'review'])
@@ -318,39 +318,46 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ADMIN ONLY — USER MANAGEMENT
     // ========================================================
 
-    Route::middleware('role:admin')
-        ->prefix('user-management')
+    Route::prefix('user-management')
         ->name('user-management.')
         ->group(function () {
 
-            Route::get('/', [UserManagementController::class, 'index'])
-                ->name('index');
+            // Read-only views: admin, manager, and cashier can view the list
+            // (so managers/cashiers can request account deletion via Action Request).
+            Route::middleware('role:admin,manager,cashier')
+                ->group(function () {
+                    Route::get('/', [UserManagementController::class, 'index'])
+                        ->name('index');
 
-            Route::get('/create', [UserManagementController::class, 'create'])
-                ->name('create');
+                    Route::get('/{user}/logs', [UserManagementController::class, 'activityLogs'])
+                        ->name('logs');
+                });
 
-            Route::post('/', [UserManagementController::class, 'store'])
-                ->name('store');
+            // Everything that mutates an account stays admin-only.
+            Route::middleware('role:admin')
+                ->group(function () {
+                    Route::get('/create', [UserManagementController::class, 'create'])
+                        ->name('create');
 
-            Route::get('/{user}/edit', [UserManagementController::class, 'edit'])
-                ->name('edit');
+                    Route::post('/', [UserManagementController::class, 'store'])
+                        ->name('store');
 
-            Route::put('/{user}', [UserManagementController::class, 'update'])
-                ->name('update');
+                    Route::get('/{user}/edit', [UserManagementController::class, 'edit'])
+                        ->name('edit');
 
-            Route::delete('/{user}', [UserManagementController::class, 'destroy'])
-                ->name('destroy');
+                    Route::put('/{user}', [UserManagementController::class, 'update'])
+                        ->name('update');
 
-            // Employee Activity Logs
-            Route::get('/{user}/logs', [UserManagementController::class, 'activityLogs'])
-                ->name('logs');
+                    Route::delete('/{user}', [UserManagementController::class, 'destroy'])
+                        ->name('destroy');
 
-            // Employee Schedule
-            Route::get('/{user}/schedule', [ScheduleController::class, 'edit'])
-                ->name('schedule.edit');
+                    // Employee Schedule
+                    Route::get('/{user}/schedule', [ScheduleController::class, 'edit'])
+                        ->name('schedule.edit');
 
-            Route::put('/{user}/schedule', [ScheduleController::class, 'update'])
-                ->name('schedule.update');
+                    Route::put('/{user}/schedule', [ScheduleController::class, 'update'])
+                        ->name('schedule.update');
+                });
         });
 });
 

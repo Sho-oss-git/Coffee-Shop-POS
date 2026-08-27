@@ -79,12 +79,12 @@ function formatHours(hours: number | null) {
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <select v-model.number="employeeId" class="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-56">
+                <select v-model.number="employeeId" class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-56">
                     <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
                 </select>
-                <input v-model="startDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-auto" />
+                <input v-model="startDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-auto" />
                 <span class="text-sm text-foreground/60">to</span>
-                <input v-model="endDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-auto" />
+                <input v-model="endDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground sm:w-auto" />
             </div>
 
             <Card>

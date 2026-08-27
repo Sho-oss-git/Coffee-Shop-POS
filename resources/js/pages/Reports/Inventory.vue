@@ -942,7 +942,7 @@ const exportSheets = [
              ======================================================= -->
 
              <details
-                 class="group overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+                 class="group overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
              >
                  <summary
                      class="flex cursor-pointer list-none items-center gap-3 p-4 select-none"
@@ -1106,7 +1106,7 @@ const exportSheets = [
              ======================================================= -->
 
              <details
-                 class="group overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+                 class="group overflow-x-auto rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
              >
                  <summary
                      class="flex cursor-pointer list-none items-center gap-3 p-4 select-none"

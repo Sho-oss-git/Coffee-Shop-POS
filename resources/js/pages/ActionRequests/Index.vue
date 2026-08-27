@@ -30,6 +30,7 @@
         { value: 'price_change', label: 'Price change' },
         { value: 'product_deletion', label: 'Product deletion' },
         { value: 'ingredient_deletion', label: 'Ingredient deletion' },
+        { value: 'user_deletion', label: 'User deletion' },
         { value: 'transaction_correction', label: 'Transaction correction' },
         { value: 'other', label: 'Other' },
     ];
@@ -73,12 +74,12 @@
                             <tr v-for="request in props.requests" :key="request.id" class="border-b align-top last:border-0">
                                 <td class="p-3"><div class="font-medium text-foreground">{{ typeLabel(request.type) }}</div><div v-if="request.target_name" class="text-xs text-foreground/60">{{ request.target_name }}</div><div class="text-xs text-foreground/60">{{ request.created_at }}</div></td>
                                 <td class="p-3 text-foreground">{{ request.requester.name }}</td>
-                                <td class="max-w-sm whitespace-pre-wrap p-3">{{ request.reason }}<div v-if="request.review_note" class="mt-2 text-xs text-foreground/60">Admin note: {{ request.review_note }}</div></td>
+                                <td class="max-w-sm whitespace-pre-wrap p-3 text-foreground">{{ request.reason }}<div v-if="request.review_note" class="mt-2 text-xs text-foreground/60">Admin note: {{ request.review_note }}</div></td>
                                 <td class="p-3"><span class="rounded-full bg-muted px-2 py-1 text-xs capitalize text-foreground">{{ request.status }}</span></td>
                                 <td v-if="canReview" class="p-3">
                                     <div v-if="request.status === 'pending'" class="flex min-w-44 flex-col gap-2">
-                                        <select v-model="reviewForm(request.id).status" class="h-9 rounded-md border bg-background px-2 text-xs"><option value="approved">Approve</option><option value="rejected">Reject</option></select>
-                                        <input v-model="reviewForm(request.id).review_note" class="h-9 rounded-md border bg-background px-2 text-xs" placeholder="Optional note" />
+                                        <select v-model="reviewForm(request.id).status" class="h-9 rounded-md border bg-background px-2 text-xs text-foreground"><option value="approved">Approve</option><option value="rejected">Reject</option></select>
+                                        <input v-model="reviewForm(request.id).review_note" class="h-9 rounded-md border bg-background px-2 text-xs text-foreground" placeholder="Optional note" />
                                         <button type="button" :disabled="reviewForm(request.id).processing" class="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground" @click="reviewRequest(request)">Submit review</button>
                                     </div>
                                     <span v-else class="text-xs text-foreground/60">Reviewed {{ request.reviewed_at }}</span>

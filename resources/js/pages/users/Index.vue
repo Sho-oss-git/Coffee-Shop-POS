@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { usePermissions } from '@/composables/usePermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     DropdownMenu,
@@ -12,7 +14,7 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Users, CircleCheck, Clock, History, MoreVertical, Search } from 'lucide-vue-next';
 import type { BreadcrumbItem } from '@/types';
 
@@ -71,10 +73,48 @@ function initials(name: string) {
         .toUpperCase();
 }
 
+const { isAdmin } = usePermissions();
+
 function confirmDelete(employee: EmployeeRow) {
-    if (window.confirm(`Delete Employee?\n\nAre you sure you want to delete ${employee.name}? This action cannot be undone.`)) {
-        router.delete(`/user-management/${employee.id}`);
+    if (isAdmin.value) {
+        if (window.confirm(`Delete Employee?\n\nAre you sure you want to delete ${employee.name}? This action cannot be undone.`)) {
+            router.delete(`/user-management/${employee.id}`);
+        }
+        return;
     }
+
+    // Managers and cashiers must request Admin approval to delete an account.
+    requestTarget.value = employee;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Manager / Cashier: request account deletion (Admin approval)          */
+/* ---------------------------------------------------------------------- */
+
+const requestTarget = ref<EmployeeRow | null>(null);
+const requestForm = useForm({
+    type: 'user_deletion',
+    reason: '',
+    target_type: 'user',
+    target_id: 0,
+});
+
+function closeRequest() {
+    requestTarget.value = null;
+    requestForm.reset();
+    requestForm.clearErrors();
+}
+
+function submitDeleteRequest() {
+    if (!requestTarget.value) return;
+    requestForm.target_id = Number(requestTarget.value.id);
+    if (!requestForm.reason) {
+        requestForm.reason = `Request deletion of employee "${requestTarget.value.name}".`;
+    }
+    requestForm.post('/action-requests', {
+        preserveScroll: true,
+        onSuccess: () => closeRequest(),
+    });
 }
 
 // --- Activity log modal (login, break start/end, logout) ---
@@ -132,7 +172,8 @@ async function viewRecords(employee: EmployeeRow) {
                     <h1 class="text-2xl font-semibold text-foreground">Employees</h1>
                     <p class="text-sm text-foreground/60">Manage employees, positions, and shift status.</p>
                 </div>
-                <Button type="button" class="w-full sm:w-auto" @click="router.visit('/user-management/create')">+ Add Employee</Button>
+                <Button v-if="isAdmin" type="button" class="w-full sm:w-auto" 
+@click="router.visit('/user-management/create')">+ Add Employee</Button>
             </div>
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -251,9 +292,9 @@ async function viewRecords(employee: EmployeeRow) {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem @click="router.visit(`/user-management/${employee.id}/edit`)">Edit</DropdownMenuItem>
-                                        <DropdownMenuItem @click="router.visit(`/user-management/${employee.id}/schedule`)">Set Schedule</DropdownMenuItem>
-                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem v-if="isAdmin" @click="router.visit(`/user-management/${employee.id}/edit`)">Edit</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="isAdmin" @click="router.visit(`/user-management/${employee.id}/schedule`)">Set Schedule</DropdownMenuItem>
+                                        <DropdownMenuSeparator v-if="isAdmin" />
                                         <DropdownMenuItem class="text-destructive" @click="confirmDelete(employee)">Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -290,6 +331,37 @@ async function viewRecords(employee: EmployeeRow) {
                         </li>
                     </ul>
                 </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Manager / Cashier: Request Account Deletion (Admin approval) -->
+        <Dialog :open="!!requestTarget" @update:open="(val) => !val && closeRequest()">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Request Account Deletion</DialogTitle>
+                    <DialogDescription class="text-foreground/60">
+                        Submit a deletion request for "{{ requestTarget?.name }}" to an Admin for approval.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="space-y-2">
+                    <Label for="user-del-reason">Reason (optional)</Label>
+                    <textarea
+                        id="user-del-reason"
+                        v-model="requestForm.reason"
+                        rows="3"
+                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder="Why should this account be deleted?"
+                    ></textarea>
+                    <p v-if="requestForm.errors.reason" class="text-sm text-destructive">{{ requestForm.errors.reason }}</p>
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" @click="closeRequest">Cancel</Button>
+                    <Button variant="destructive" :disabled="requestForm.processing" @click="submitDeleteRequest">
+                        {{ requestForm.processing ? 'Sending…' : 'Send Request' }}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </AppLayout>

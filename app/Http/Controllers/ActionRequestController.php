@@ -8,6 +8,8 @@ use App\Models\ActionRequest;
 use App\Models\Ingredient;
 use App\Models\Product;
 use App\Models\Transaction;
+use App\Models\User;
+use App\Enums\UserRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -100,6 +102,21 @@ class ActionRequestController extends Controller
             return;
         }
 
+        if ($actionRequest->type === 'user_deletion' && $actionRequest->target_type === 'user') {
+            $target = User::findOrFail($actionRequest->target_id);
+
+            if ($target->id === $reviewerId) {
+                throw new \RuntimeException('You cannot delete your own account.');
+            }
+
+            if ($target->role === UserRole::Admin) {
+                throw new \RuntimeException('Admin accounts cannot be deleted from this page.');
+            }
+
+            $target->delete();
+            return;
+        }
+
         if ($actionRequest->type === 'price_change' && $actionRequest->target_type === 'product') {
             Product::whereKey($actionRequest->target_id)->update([
                 'price' => $actionRequest->payload['new_price'] ?? null,
@@ -143,6 +160,7 @@ class ActionRequestController extends Controller
         return match ($actionRequest->target_type) {
             'product' => optional(Product::find($actionRequest->target_id))->name,
             'ingredient' => optional(Ingredient::find($actionRequest->target_id))->name,
+            'user' => optional(User::find($actionRequest->target_id))->name,
             'transaction' => $actionRequest->target_id ? 'Transaction #' . $actionRequest->target_id : null,
             default => null,
         };

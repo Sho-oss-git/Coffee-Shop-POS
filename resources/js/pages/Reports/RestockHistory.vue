@@ -72,8 +72,8 @@ function formatDate(value: string) {
                 </div>
             </div>
 
-            <div class="rounded-lg border">
-                <table class="w-full text-sm">
+            <div class="rounded-lg border overflow-x-auto">
+                <table class="w-full text-sm min-w-[600px]">
                     <thead class="bg-muted/50">
                         <tr>
                             <th class="p-2 text-left text-foreground/70">Date</th>

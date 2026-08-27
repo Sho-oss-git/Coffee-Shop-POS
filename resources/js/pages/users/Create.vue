@@ -30,8 +30,8 @@ function submit() {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-4 max-w-lg">
             <div>
-                <h1 class="text-2xl font-semibold">Add Employee</h1>
-                <p class="text-sm text-muted-foreground">Create a new Manager or Cashier account.</p>
+                <h1 class="text-2xl font-semibold text-foreground">Add Employee</h1>
+                <p class="text-sm text-foreground/60">Create a new Manager or Cashier account.</p>
             </div>
 
             <form @submit.prevent="submit" class="space-y-4">
@@ -60,7 +60,7 @@ function submit() {
 
                 <div class="space-y-2">
                     <Label for="role">Role</Label>
-                    <select id="role" v-model="form.role" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                    <select id="role" v-model="form.role" class="h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground">
                         <option value="manager">Manager</option>
                         <option value="cashier">Cashier</option>
                     </select>

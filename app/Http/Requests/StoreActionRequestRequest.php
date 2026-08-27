@@ -12,7 +12,7 @@ class StoreActionRequestRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()?->isManager() ?? false;
+        return $this->user()?->isManager() || $this->user()?->isCashier() ?? false;
     }
 
     /**
@@ -23,9 +23,9 @@ class StoreActionRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'in:inventory_adjustment,price_change,product_deletion,ingredient_deletion,transaction_correction,other'],
+            'type' => ['required', 'in:inventory_adjustment,price_change,product_deletion,ingredient_deletion,user_deletion,transaction_correction,other'],
             'reason' => ['required', 'string', 'max:2000'],
-            'target_type' => ['nullable', 'in:product,ingredient,transaction'],
+            'target_type' => ['nullable', 'in:product,ingredient,user,transaction'],
             'target_id' => ['nullable', 'integer', 'min:1'],
             'payload' => ['nullable', 'array'],
             'payload.action' => ['nullable', 'in:refund,void'],
