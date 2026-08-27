@@ -100,12 +100,16 @@ function displayUnit(unit: Unit): string {
 }
 
 function formatStock(value: number, type: MeasurementType): string {
-    return type === 'piece' ? String(Math.round(value)) : value.toFixed(2);
+    if (type === 'piece') {
+        return Math.round(value).toLocaleString('en-PH');
+    }
+    // Round to 2 decimals, but drop trailing zeros: 7.0000 -> "7", 2119.25 -> "2,119.25"
+    return value.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function formatCurrency(value: number | null): string {
     if (value === null) return '—';
-    return `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 // unit_cost is stored as a whole peso amount (no cents), so it's formatted
@@ -451,65 +455,124 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                 </div>
             </div>
 
-            <!-- Ingredient cards -->
-            <div v-if="hasIngredients" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                <div
-                    v-for="ingredient in filteredIngredients"
-                    :key="ingredient.id"
-                    class="flex flex-col gap-3 rounded-xl border border-sidebar-border/70 p-4 transition-colors hover:border-sidebar-border dark:border-sidebar-border"
-                >
-                    <div class="flex items-start justify-between gap-2">
-                        <div class="flex items-start gap-2.5">
-                            <div
-                                class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                                :class="TYPE_BADGE_STYLES[ingredient.measurement_type]"
+            <!-- Inventory Data Table inside a Content Card -->
+            <div
+                v-if="hasIngredients"
+                class="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+            >
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-sidebar-border/70 bg-muted/40 dark:border-sidebar-border">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Ingredient</th>
+                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
+                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Stock</th>
+                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Min. Stock</th>
+                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Cost / Value</th>
+                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Expiry</th>
+                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="ingredient in filteredIngredients"
+                                :key="ingredient.id"
+                                class="border-b border-sidebar-border/70 transition-colors last:border-b-0 hover:bg-muted/30 dark:border-sidebar-border"
                             >
-                                <component :is="TYPE_ICON[ingredient.measurement_type]" class="h-4 w-4" />
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-semibold leading-tight">{{ ingredient.name }}</h3>
-                                <p class="text-xs text-muted-foreground">{{ TYPE_LABELS[ingredient.measurement_type] }}</p>
-                            </div>
-                        </div>
-                        <span class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium" :class="statusStyles[ingredient.status]">
-                            {{ statusLabels[ingredient.status] }}
-                        </span>
-                    </div>
+                                <!-- Name + type icon -->
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2.5">
+                                        <div
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                            :class="TYPE_BADGE_STYLES[ingredient.measurement_type]"
+                                        >
+                                            <component :is="TYPE_ICON[ingredient.measurement_type]" class="h-4 w-4" />
+                                        </div>
+                                        <span class="font-medium">{{ ingredient.name }}</span>
+                                    </div>
+                                </td>
 
-                    <div class="flex items-end justify-between">
-                        <div>
-                            <p class="text-2xl font-bold leading-none">
-                                {{ formatStock(ingredient.total_stock, ingredient.measurement_type) }}
-                                <span class="text-sm font-medium text-muted-foreground">{{ displayUnit(ingredient.unit) }}</span>
-                            </p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                                Min: {{ ingredient.minimum_stock }}{{ displayUnit(ingredient.unit) }}
-                            </p>
-                            <p v-if="ingredient.unit_cost" class="mt-0.5 text-xs text-muted-foreground">
-                                {{ formatWholePeso(ingredient.unit_cost) }}/{{ displayUnit(ingredient.unit) }}
-                                · Value: {{ formatCurrency(ingredient.total_value) }}
-                            </p>
-                        </div>
-                        <span v-if="ingredient.nearest_expiry" class="flex items-center gap-1 text-xs text-muted-foreground">
-                            <AlertTriangle v-if="ingredient.status !== 'out_of_stock'" class="h-3.5 w-3.5" />
-                            {{ ingredient.nearest_expiry }}
-                        </span>
-                    </div>
+                                <!-- Type -->
+                                <td class="px-4 py-3 text-muted-foreground">
+                                    {{ TYPE_LABELS[ingredient.measurement_type] }}
+                                </td>
 
-                    <div class="mt-1 flex justify-end gap-1.5 border-t border-sidebar-border/70 pt-3 dark:border-sidebar-border">
-                        <Button variant="outline" size="icon" title="View batches" @click="openBatches(ingredient)">
-                            <Layers class="h-4 w-4" />
-                        </Button>
-                        <Button v-if="isAdmin" variant="outline" size="icon" title="Restock" @click="openRestock(ingredient)">
-                            <Plus class="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" title="Edit" @click="openEditDialog(ingredient)">
-                            <Pencil class="h-4 w-4" />
-                        </Button>
-                        <Button v-if="isAdmin" variant="outline" size="icon" title="Delete" @click="deleteTarget = ingredient">
-                            <Trash2 class="h-4 w-4" />
-                        </Button>
-                    </div>
+                                <!-- Stock -->
+                                <td class="px-4 py-3 text-right font-medium">
+                                    {{ formatStock(ingredient.total_stock, ingredient.measurement_type) }}
+                                    {{ displayUnit(ingredient.unit) }}
+                                </td>
+
+                                <!-- Minimum stock -->
+                                <td class="px-4 py-3 text-right text-muted-foreground">
+                                    {{ formatStock(Number(ingredient.minimum_stock), ingredient.measurement_type) }}{{ displayUnit(ingredient.unit) }}
+                                </td>
+
+                                <!-- Cost / value -->
+                                <td class="px-4 py-3 text-right text-muted-foreground">
+                                    <template v-if="ingredient.unit_cost">
+                                        {{ formatWholePeso(ingredient.unit_cost) }}/{{ displayUnit(ingredient.unit) }}
+                                        <br />
+                                        <span class="text-xs">{{ formatCurrency(ingredient.total_value) }}</span>
+                                    </template>
+                                    <template v-else>—</template>
+                                </td>
+
+                                <!-- Expiry -->
+                                <td class="px-4 py-3">
+                                    <span
+                                        v-if="ingredient.nearest_expiry"
+                                        class="flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+                                    >
+                                        <AlertTriangle v-if="ingredient.status !== 'out_of_stock'" class="h-3.5 w-3.5" />
+                                        {{ ingredient.nearest_expiry }}
+                                    </span>
+                                    <span v-else class="text-xs text-muted-foreground">—</span>
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-4 py-3">
+                                    <span
+                                        class="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                                        :class="statusStyles[ingredient.status]"
+                                    >
+                                        {{ statusLabels[ingredient.status] }}
+                                    </span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-4 py-3">
+                                    <div class="flex justify-end gap-1.5">
+                                        <Button variant="outline" size="icon" title="View batches" @click="openBatches(ingredient)">
+                                            <Layers class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            v-if="isAdmin"
+                                            variant="outline"
+                                            size="icon"
+                                            title="Restock"
+                                            @click="openRestock(ingredient)"
+                                        >
+                                            <Plus class="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="outline" size="icon" title="Edit" @click="openEditDialog(ingredient)">
+                                            <Pencil class="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            v-if="isAdmin"
+                                            variant="outline"
+                                            size="icon"
+                                            title="Delete"
+                                            @click="deleteTarget = ingredient"
+                                        >
+                                            <Trash2 class="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -659,8 +722,8 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                             </span>
                         </div>
                         <p class="mt-1 text-muted-foreground">
-                            Quantity: {{ batch.quantity }}{{ displayUnit(batch.unit) }} · Remaining:
-                            {{ batch.remaining_quantity }}{{ displayUnit(batch.unit) }}
+                            Quantity: {{ formatStock(Number(batch.quantity), batchesTarget!.measurement_type) }}{{ displayUnit(batch.unit) }} · Remaining:
+                            {{ formatStock(Number(batch.remaining_quantity), batchesTarget!.measurement_type) }}{{ displayUnit(batch.unit) }}
                         </p>
                         <p class="text-muted-foreground">
                             Received: {{ batch.received_date }}

@@ -81,12 +81,12 @@ const allNavGroups: RoleNavGroup[] = [
         items: [
             {
                 title: 'Ingredients',
-                href: '/inventory/ingredients',
+                href: '/inventory/ingredients', 
                 icon: Warehouse,
                 roles: ['admin', 'manager'],
             },
             {
-                title: 'Cookies',
+                title: 'Pastries & Baked Goods',
                 href: '/inventory/cookies',
                 icon: Warehouse,
                 roles: ['admin', 'manager'],
