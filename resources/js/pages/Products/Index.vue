@@ -169,7 +169,7 @@ function categoryInitial(name: string): string {
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-3 sm:p-4">
             <!-- Header -->
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h1 class="text-xl font-semibold">Products</h1>
+                <h1 class="text-xl font-semibold text-foreground">Products</h1>
                 <Button class="w-full sm:w-auto" @click="addProductRef?.open()">
                     <Plus class="mr-2 h-4 w-4" />
                     Add Product
@@ -179,14 +179,14 @@ function categoryInitial(name: string): string {
             <!-- Search / Filters -->
             <div class="flex flex-col gap-3">
                 <div class="relative w-full sm:max-w-xs">
-                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" />
                     <Input v-model="search" type="text" placeholder="Search products..." class="w-full pl-9" />
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                     <select
                         v-model="categoryFilter"
-                        class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
+                        class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
                     >
                         <option value="">All Categories</option>
                         <option v-for="cat in props.categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
@@ -194,7 +194,7 @@ function categoryInitial(name: string): string {
 
                     <select
                         v-model="statusFilter"
-                        class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
+                        class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
                     >
                         <option value="">All Statuses</option>
                         <option value="available">Available</option>
@@ -295,7 +295,7 @@ function categoryInitial(name: string): string {
                 </div>
 
                 <!-- Empty State -->
-                <div v-else class="flex min-h-[250px] flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground">
+                <div v-else class="flex min-h-[250px] flex-col items-center justify-center gap-3 px-4 text-center text-foreground/60">
                     <ImageOff class="h-10 w-10" />
                     <p v-if="hasActiveFilters">No products match your filters.</p>
                     <p v-else>No products yet. Add your first product to get started.</p>

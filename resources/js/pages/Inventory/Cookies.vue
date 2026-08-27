@@ -36,7 +36,7 @@ const props = defineProps<{
     categories: CategoryOption[];
     filters: { search?: string; category?: string };
 }>();
-const { isAdmin } = usePermissions();
+const { canManageInventory } = usePermissions();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Cookie Inventory', href: '/inventory/cookies' }];
 
@@ -174,8 +174,8 @@ const projectedStock = computed(() => {
             <!-- Header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 class="text-xl font-semibold">Cookie Inventory</h1>
-                    <p class="text-sm text-muted-foreground">
+                    <h1 class="text-xl font-semibold text-foreground">Cookie Inventory</h1>
+                    <p class="text-sm text-foreground/60">
                         On-hand stock counts for finished products. To add a new item, use the Products page.
                     </p>
                 </div>
@@ -185,11 +185,11 @@ const projectedStock = computed(() => {
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div class="flex items-center gap-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <Package class="h-5 w-5 text-muted-foreground" />
+                        <Package class="h-5 w-5 text-foreground/60" />
                     </div>
                     <div>
-                        <p class="text-lg font-semibold leading-none">{{ stats.total }}</p>
-                        <p class="text-xs text-muted-foreground">Items tracked</p>
+                        <p class="text-lg font-semibold leading-none text-foreground">{{ stats.total }}</p>
+                        <p class="text-xs text-foreground/60">Items tracked</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
@@ -197,8 +197,8 @@ const projectedStock = computed(() => {
                         <PackageX class="h-5 w-5 text-destructive" />
                     </div>
                     <div>
-                        <p class="text-lg font-semibold leading-none">{{ stats.outOfStock }}</p>
-                        <p class="text-xs text-muted-foreground">Out of stock</p>
+                        <p class="text-lg font-semibold leading-none text-foreground">{{ stats.outOfStock }}</p>
+                        <p class="text-xs text-foreground/60">Out of stock</p>
                     </div>
                 </div>
             </div>
@@ -206,20 +206,20 @@ const projectedStock = computed(() => {
             <!-- Search + category filter -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="relative w-full max-w-xs">
-                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" />
                     <Input v-model="search" type="text" placeholder="Search items..." class="pl-9" />
                 </div>
 
                 <select
                     v-model="categoryFilter"
-                    class="h-9 min-w-[140px] rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    class="h-9 min-w-[140px] rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                     <option value="">All Categories</option>
                     <option v-for="cat in props.categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
                 </select>
 
                 <Button v-if="hasActiveFilters" variant="ghost" size="sm" @click="clearFilters">Clear filters</Button>
-                <Loader2 v-if="isFiltering" class="h-4 w-4 animate-spin text-muted-foreground" />
+                <Loader2 v-if="isFiltering" class="h-4 w-4 animate-spin text-foreground/60" />
             </div>
 
             <!-- Product cards -->
@@ -233,22 +233,22 @@ const projectedStock = computed(() => {
                         <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
                             <img v-if="product.image_url" :src="product.image_url" :alt="product.name" class="h-full w-full object-cover" />
                             <div v-else class="flex h-full w-full items-center justify-center">
-                                <ImageOff class="h-4 w-4 text-muted-foreground" />
+                                <ImageOff class="h-4 w-4 text-foreground/60" />
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-sm font-semibold leading-tight">{{ product.name }}</h3>
-                            <p class="text-xs text-muted-foreground">{{ product.category }}</p>
+                            <h3 class="text-sm font-semibold leading-tight text-foreground">{{ product.name }}</h3>
+                            <p class="text-xs text-foreground/60">{{ product.category }}</p>
                         </div>
                     </div>
 
                     <div class="flex items-end justify-between">
                         <div>
-                            <p class="text-2xl font-bold leading-none">
+                            <p class="text-2xl font-bold leading-none text-foreground">
                                 {{ product.stock_quantity ?? 0 }}
-                                <span class="text-sm font-medium text-muted-foreground">pcs</span>
+                                <span class="text-sm font-medium text-foreground/60">pcs</span>
                             </p>
-                            <p class="mt-1 text-xs text-muted-foreground">₱{{ Number(product.price).toFixed(2) }}</p>
+                            <p class="mt-1 text-xs text-foreground/60">₱{{ Number(product.price).toFixed(2) }}</p>
                         </div>
                         <span
                             class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
@@ -263,7 +263,7 @@ const projectedStock = computed(() => {
                     </div>
 
                     <div class="mt-1 flex justify-end border-t border-sidebar-border/70 pt-3 dark:border-sidebar-border">
-                        <Button v-if="isAdmin" variant="outline" size="sm" @click="openAdjust(product)">
+                        <Button v-if="canManageInventory" variant="outline" size="sm" @click="openAdjust(product)" class="text-foreground/60 hover:text-foreground">
                             <Plus class="mr-1.5 h-3.5 w-3.5" />
                             Adjust Stock
                         </Button>
@@ -274,7 +274,7 @@ const projectedStock = computed(() => {
             <!-- Empty State -->
             <div
                 v-else
-                class="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border/70 text-center text-muted-foreground dark:border-sidebar-border"
+                class="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border/70 text-center text-foreground/60 dark:border-sidebar-border"
             >
                 <p v-if="hasActiveFilters">No items match your filters.</p>
                 <p v-else>
@@ -291,7 +291,7 @@ const projectedStock = computed(() => {
                 </DialogHeader>
 
                 <div class="space-y-4">
-                    <p class="text-sm text-muted-foreground">
+                    <p class="text-sm text-foreground/60">
                         Current stock: <span class="font-medium text-foreground">{{ adjustTarget?.stock_quantity ?? 0 }} pcs</span>
                     </p>
 
@@ -299,7 +299,7 @@ const projectedStock = computed(() => {
                         <Label for="cookie-delta">Quantity</Label>
                         <Input id="cookie-delta" v-model="adjustForm.delta" type="number" min="1" step="1" placeholder="e.g. 24" />
                         <p v-if="adjustForm.errors.delta" class="text-sm text-destructive">{{ adjustForm.errors.delta }}</p>
-                        <p v-if="projectedStock !== null" class="text-xs text-muted-foreground">
+                        <p v-if="projectedStock !== null" class="text-xs text-foreground/60">
                             New total after adding: {{ projectedStock }} pcs · after removing: {{ (adjustTarget?.stock_quantity ?? 0) - Number(adjustForm.delta) }} pcs
                         </p>
                     </div>
@@ -312,6 +312,7 @@ const projectedStock = computed(() => {
                         variant="outline"
                         :disabled="adjustForm.processing || adjustForm.delta === ''"
                         @click="submitAdjust(-1)"
+                        class="text-foreground/60 hover:text-foreground"
                     >
                         <Loader2 v-if="adjustForm.processing" class="mr-2 h-4 w-4 animate-spin" />
                         <Minus v-else class="mr-2 h-4 w-4" />

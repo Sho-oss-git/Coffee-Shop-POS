@@ -41,7 +41,7 @@ const inputType = computed(() => (props.period === 'yearly' ? 'number' : props.p
                 :key="p"
                 type="button"
                 @click="setPeriod(p)"
-                class="px-3 py-1.5 text-sm capitalize"
+                class="px-3 py-1.5 text-sm capitalize text-foreground"
                 :class="period === p ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'"
             >
                 {{ p }}

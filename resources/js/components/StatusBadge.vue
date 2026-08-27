@@ -15,7 +15,7 @@ const dotColor: Record<string, string> = {
 </script>
 
 <template>
-    <span class="inline-flex items-center gap-1.5 text-sm">
+    <span class="inline-flex items-center gap-1.5 text-sm text-foreground">
         <span class="h-2 w-2 rounded-full" :class="dotColor[status]" />
         {{ labels[status] }}
     </span>

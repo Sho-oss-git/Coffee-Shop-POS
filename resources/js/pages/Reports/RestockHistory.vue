@@ -50,24 +50,24 @@ function formatDate(value: string) {
     <AppLayout>
         <div class="p-4 space-y-6">
             <div>
-                <h1 class="text-2xl font-semibold">Restock History</h1>
-                <p class="text-sm text-muted-foreground">All batches received, most recent first</p>
+                <h1 class="text-2xl font-semibold text-foreground">Restock History</h1>
+                <p class="text-sm text-foreground/60">All batches received, most recent first</p>
             </div>
 
             <div class="flex flex-wrap items-end gap-3">
                 <div>
-                    <label class="text-xs text-muted-foreground">Ingredient</label>
+                    <label class="text-xs text-foreground/60">Ingredient</label>
                     <select v-model="ingredientId" @change="applyFilters" class="block rounded-md border px-2 py-1.5 text-sm">
                         <option value="">All</option>
                         <option v-for="i in ingredients" :key="i.id" :value="i.id">{{ i.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-xs text-muted-foreground">From</label>
+                    <label class="text-xs text-foreground/60">From</label>
                     <input v-model="dateFrom" type="date" @change="applyFilters" class="block rounded-md border px-2 py-1.5 text-sm" />
                 </div>
                 <div>
-                    <label class="text-xs text-muted-foreground">To</label>
+                    <label class="text-xs text-foreground/60">To</label>
                     <input v-model="dateTo" type="date" @change="applyFilters" class="block rounded-md border px-2 py-1.5 text-sm" />
                 </div>
             </div>
@@ -76,31 +76,31 @@ function formatDate(value: string) {
                 <table class="w-full text-sm">
                     <thead class="bg-muted/50">
                         <tr>
-                            <th class="p-2 text-left">Date</th>
-                            <th class="p-2 text-left">Ingredient</th>
-                            <th class="p-2 text-right">Quantity Added</th>
-                            <th class="p-2 text-right">Batch Received</th>
-                            <th class="p-2 text-right">Batch Expiry</th>
-                            <th class="p-2 text-left">Note</th>
+                            <th class="p-2 text-left text-foreground/70">Date</th>
+                            <th class="p-2 text-left text-foreground/70">Ingredient</th>
+                            <th class="p-2 text-right text-foreground/70">Quantity Added</th>
+                            <th class="p-2 text-right text-foreground/70">Batch Received</th>
+                            <th class="p-2 text-right text-foreground/70">Batch Expiry</th>
+                            <th class="p-2 text-left text-foreground/70">Note</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="log in logs.data" :key="log.id" class="border-t">
-                            <td class="p-2">{{ formatDate(log.created_at) }}</td>
-                            <td class="p-2">{{ log.ingredient?.name ?? '—' }}</td>
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-foreground">{{ formatDate(log.created_at) }}</td>
+                            <td class="p-2 text-foreground">{{ log.ingredient?.name ?? '—' }}</td>
+                            <td class="p-2 text-right text-foreground">
                                 +{{ log.quantity_change }} {{ log.ingredient?.unit ?? '' }}
                             </td>
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{ log.ingredient_batch?.received_date ? formatDate(log.ingredient_batch.received_date) : '—' }}
                             </td>
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{ log.ingredient_batch?.expiry_date ? formatDate(log.ingredient_batch.expiry_date) : '—' }}
                             </td>
-                            <td class="p-2">{{ log.note ?? '—' }}</td>
+                            <td class="p-2 text-foreground">{{ log.note ?? '—' }}</td>
                         </tr>
                         <tr v-if="!logs.data.length">
-                            <td colspan="6" class="p-4 text-center text-muted-foreground">No restock history yet</td>
+                            <td colspan="6" class="p-4 text-center text-foreground/60">No restock history yet</td>
                         </tr>
                     </tbody>
                 </table>

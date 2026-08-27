@@ -74,8 +74,8 @@ function formatHours(hours: number | null) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex min-w-0 flex-col gap-6 p-3 sm:p-4">
             <div>
-                <h1 class="text-2xl font-semibold">Attendance Report</h1>
-                <p class="text-sm text-muted-foreground">Expected vs actual time in/out, with Late, Undertime, Overtime, and Break totals.</p>
+                <h1 class="text-2xl font-semibold text-foreground">Attendance Report</h1>
+                <p class="text-sm text-foreground/60">Expected vs actual time in/out, with Late, Undertime, Overtime, and Break totals.</p>
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -83,7 +83,7 @@ function formatHours(hours: number | null) {
                     <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
                 </select>
                 <input v-model="startDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-auto" />
-                <span class="text-sm text-muted-foreground">to</span>
+                <span class="text-sm text-foreground/60">to</span>
                 <input v-model="endDate" type="date" class="h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-auto" />
             </div>
 
@@ -93,43 +93,43 @@ function formatHours(hours: number | null) {
                         <table class="w-full min-w-[900px] text-sm">
                             <thead>
                                 <tr class="border-b bg-muted/40 text-left">
-                                    <th class="p-3 font-medium">Date</th>
-                                    <th class="p-3 font-medium">Expected</th>
-                                    <th class="p-3 font-medium">Actual</th>
-                                    <th class="p-3 font-medium">Late</th>
-                                    <th class="p-3 font-medium">Undertime</th>
-                                    <th class="p-3 font-medium">Overtime</th>
-                                    <th class="p-3 font-medium">Break</th>
-                                    <th class="p-3 font-medium">Total Hours</th>
-                                    <th class="p-3 font-medium">Status</th>
+                                    <th class="p-3 font-medium text-foreground/70">Date</th>
+                                    <th class="p-3 font-medium text-foreground/70">Expected</th>
+                                    <th class="p-3 font-medium text-foreground/70">Actual</th>
+                                    <th class="p-3 font-medium text-foreground/70">Late</th>
+                                    <th class="p-3 font-medium text-foreground/70">Undertime</th>
+                                    <th class="p-3 font-medium text-foreground/70">Overtime</th>
+                                    <th class="p-3 font-medium text-foreground/70">Break</th>
+                                    <th class="p-3 font-medium text-foreground/70">Total Hours</th>
+                                    <th class="p-3 font-medium text-foreground/70">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="row in rows" :key="row.date" class="border-b last:border-0">
-                                    <td class="p-3 whitespace-nowrap">{{ row.day_label }}</td>
-                                    <td class="p-3 whitespace-nowrap text-xs text-muted-foreground">
+                                    <td class="p-3 whitespace-nowrap text-foreground">{{ row.day_label }}</td>
+                                    <td class="p-3 whitespace-nowrap text-xs text-foreground/60">
                                         <template v-if="row.expected_time_in">
                                             {{ row.expected_time_in }} - {{ row.expected_time_out ?? '—' }}
                                         </template>
                                         <template v-else>&mdash;</template>
                                     </td>
-                                    <td class="p-3 whitespace-nowrap text-xs text-muted-foreground">
+                                    <td class="p-3 whitespace-nowrap text-xs text-foreground/60">
                                         <template v-if="row.actual_time_in">
                                             {{ row.actual_time_in }} - {{ row.actual_time_out ?? 'Ongoing' }}
                                         </template>
                                         <template v-else>&mdash;</template>
                                     </td>
-                                    <td class="p-3" :class="row.late_minutes ? 'font-medium text-red-600' : 'text-muted-foreground'">
+                                    <td class="p-3" :class="row.late_minutes ? 'font-medium text-red-600' : 'text-foreground/60'">
                                         {{ formatMinutes(row.late_minutes) }}
                                     </td>
-                                    <td class="p-3" :class="row.undertime_minutes ? 'font-medium text-amber-600' : 'text-muted-foreground'">
+                                    <td class="p-3" :class="row.undertime_minutes ? 'font-medium text-amber-600' : 'text-foreground/60'">
                                         {{ formatMinutes(row.undertime_minutes) }}
                                     </td>
-                                    <td class="p-3" :class="row.overtime_minutes ? 'font-medium text-green-600' : 'text-muted-foreground'">
+                                    <td class="p-3" :class="row.overtime_minutes ? 'font-medium text-green-600' : 'text-foreground/60'">
                                         {{ formatMinutes(row.overtime_minutes) }}
                                     </td>
-                                    <td class="p-3 text-muted-foreground">{{ formatMinutes(row.break_minutes) }}</td>
-                                    <td class="p-3 font-medium">
+                                    <td class="p-3 text-foreground/60">{{ formatMinutes(row.break_minutes) }}</td>
+                                    <td class="p-3 font-medium text-foreground">
                                         {{ formatHours(row.total_work_hours) }}
                                     </td>
                                     <td class="p-3">
@@ -139,7 +139,7 @@ function formatHours(hours: number | null) {
                                     </td>
                                 </tr>
                                 <tr v-if="rows.length === 0">
-                                    <td colspan="9" class="p-8 text-center text-muted-foreground">Walang employee na napili.</td>
+                                    <td colspan="9" class="p-8 text-center text-foreground/60">Walang employee na napili.</td>
                                 </tr>
                             </tbody>
                         </table>

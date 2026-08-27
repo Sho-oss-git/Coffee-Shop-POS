@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { ChevronDown, Download, Printer } from 'lucide-vue-next';
+import { ChevronDown, Download, History, PackagePlus, Printer } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 interface LowStockItem {
@@ -27,6 +27,15 @@ interface StockValueItem {
     total_value: number;
 }
 
+interface FinishedStockValueItem {
+    id: number;
+    name: string;
+    stock_quantity: number;
+    unit: string;
+    price: number | string;
+    total_value: number;
+}
+
 interface ExpiringBatch {
     id: number;
     ingredient_name: string;
@@ -44,6 +53,7 @@ interface RestockLogItem {
     expiry_date: string | null;
     price: number | null;
     note: string | null;
+    user_name: string | null;
     created_at: string;
 }
 
@@ -53,6 +63,7 @@ interface ProductRestockLogItem {
     type: 'restock' | 'sale' | 'adjustment' | 'expired';
     quantity_change: number;
     note: string | null;
+    user_name: string | null;
     created_at: string;
 }
 
@@ -72,6 +83,7 @@ const props = defineProps<{
     restockHistory: RestockLogItem[];
     productRestockHistory: ProductRestockLogItem[];
     stockValueItems: StockValueItem[];
+    finishedStockValueItems: FinishedStockValueItem[];
 }>();
 
 function formatCurrency(value: number | null) {
@@ -85,7 +97,7 @@ function formatCurrency(value: number | null) {
 
 // unit_cost is a whole-peso amount.
 function formatWholePeso(value: number) {
-    return `₱${value.toLocaleString('en-PH', {
+    return `₱${Number(value).toLocaleString('en-PH', {
         maximumFractionDigits: 0,
     })}`;
 }
@@ -220,11 +232,11 @@ const exportSheets = [
                 class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
             >
                 <div>
-                    <h1 class="text-2xl font-semibold">
+                    <h1 class="text-2xl font-semibold text-foreground">
                         Inventory Report
                     </h1>
 
-                    <p class="text-sm text-muted-foreground">
+                    <p class="text-sm text-foreground/60">
                         Current stock levels and expiry monitoring
                     </p>
                 </div>
@@ -239,11 +251,11 @@ const exportSheets = [
                          EXCEL EXPORT DROPDOWN
                     =================================================== -->
 
-                    <div class="relative">
+<div class="relative">
                         <button
                             type="button"
                             @click="exportMenuOpen = !exportMenuOpen"
-                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm text-foreground hover:bg-muted"
                         >
                             <Download class="h-4 w-4" />
 
@@ -265,7 +277,7 @@ const exportSheets = [
                                         'reports.inventory.export'
                                     )
                                 "
-                                class="block border-b px-3 py-2 text-sm font-medium hover:bg-muted"
+                                class="block border-b px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                             >
                                 Full Report (all sheets)
                             </a>
@@ -281,7 +293,7 @@ const exportSheets = [
                                         sheet.key
                                     )
                                 "
-                                class="block px-3 py-2 text-sm hover:bg-muted"
+                                class="block px-3 py-2 text-sm text-foreground hover:bg-muted"
                             >
                                 {{ sheet.label }} only
                             </a>
@@ -290,13 +302,13 @@ const exportSheets = [
 
                     <!-- ==================================================
                          WORD / PRINT DROPDOWN
-                    =================================================== -->
+                     =================================================== -->
 
                     <div class="relative">
                         <button
                             type="button"
                             @click="printMenuOpen = !printMenuOpen"
-                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm text-foreground hover:bg-muted"
                         >
                             <Printer class="h-4 w-4" />
 
@@ -318,7 +330,7 @@ const exportSheets = [
                                         'reports.inventory.export.word'
                                     )
                                 "
-                                class="block border-b px-3 py-2 text-sm font-medium hover:bg-muted"
+                                class="block border-b px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
                             >
                                 Full Report (all sections)
                             </a>
@@ -334,7 +346,7 @@ const exportSheets = [
                                         sheet.key
                                     )
                                 "
-                                class="block px-3 py-2 text-sm hover:bg-muted"
+                                class="block px-3 py-2 text-sm text-foreground hover:bg-muted"
                             >
                                 {{ sheet.label }} only
                             </a>
@@ -343,149 +355,149 @@ const exportSheets = [
                 </div>
             </div>
 
-            <!-- ======================================================
+<!-- ======================================================
                  SUMMARY CARDS
-            ======================================================= -->
+             ======================================================= -->
 
-            <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
+             <div class="grid grid-cols-2 gap-4 md:grid-cols-5">
 
-                <!-- Total Ingredients -->
+                 <!-- Total Ingredients -->
 
-                <button
-                    type="button"
-                    @click="selectSection('total')"
-                    class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
-                    :class="
-                        activeSection === 'total'
-                            ? 'border-primary ring-1 ring-primary'
-                            : ''
-                    "
-                >
-                    <p class="text-xs text-muted-foreground">
-                        Total Ingredients
-                    </p>
+                 <button
+                     type="button"
+                     @click="selectSection('total')"
+                     class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                     :class="
+                         activeSection === 'total'
+                             ? 'border-primary ring-1 ring-primary'
+                             : ''
+                     "
+                 >
+                     <p class="text-xs text-foreground/60">
+                         Total Ingredients
+                     </p>
 
-                    <p class="text-xl font-semibold">
-                        {{ summary.total_ingredients }}
-                    </p>
-                </button>
+                     <p class="text-xl font-semibold text-foreground">
+                         {{ summary.total_ingredients }}
+                     </p>
+                 </button>
 
-                <!-- Total Stock Value -->
+                 <!-- Total Stock Value -->
 
-                <button
-                    type="button"
-                    @click="selectSection('value')"
-                    class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
-                    :class="
-                        activeSection === 'value'
-                            ? 'border-primary ring-1 ring-primary'
-                            : ''
-                    "
-                >
-                    <p class="text-xs text-muted-foreground">
-                        Total Stock Value
-                    </p>
+                 <button
+                     type="button"
+                     @click="selectSection('value')"
+                     class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                     :class="
+                         activeSection === 'value'
+                             ? 'border-primary ring-1 ring-primary'
+                             : ''
+                     "
+                 >
+                     <p class="text-xs text-foreground/60">
+                         Total Stock Value
+                     </p>
 
-                    <p class="text-xl font-semibold">
-                        {{
-                            formatCurrency(
-                                summary.total_stock_value
-                            )
-                        }}
-                    </p>
+                     <p class="text-xl font-semibold text-foreground">
+                         {{
+                             formatCurrency(
+                                 summary.total_stock_value
+                             )
+                         }}
+                     </p>
 
-                    <p
-                        v-if="summary.total_stock_value === null"
-                        class="mt-1 text-[10px] text-muted-foreground"
-                    >
-                        Cost tracking not set up yet
-                    </p>
-                </button>
+                     <p
+                         v-if="summary.total_stock_value === null"
+                         class="mt-1 text-[10px] text-foreground/60"
+                     >
+                         Cost tracking not set up yet
+                     </p>
+                 </button>
 
-                <!-- Low Stock -->
+                 <!-- Low Stock -->
 
-                <button
-                    type="button"
-                    @click="selectSection('low_stock')"
-                    class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
-                    :class="
-                        activeSection === 'low_stock'
-                            ? 'border-primary ring-1 ring-primary'
-                            : ''
-                    "
-                >
-                    <p class="text-xs text-muted-foreground">
-                        Low Stock Items
-                    </p>
+                 <button
+                     type="button"
+                     @click="selectSection('low_stock')"
+                     class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                     :class="
+                         activeSection === 'low_stock'
+                             ? 'border-primary ring-1 ring-primary'
+                             : ''
+                     "
+                 >
+                     <p class="text-xs text-foreground/60">
+                         Low Stock Items
+                     </p>
 
-                    <p
-                        class="text-xl font-semibold"
-                        :class="
-                            summary.low_stock_count
-                                ? 'text-amber-600'
-                                : ''
-                        "
-                    >
-                        {{ summary.low_stock_count }}
-                    </p>
-                </button>
+                     <p
+                         class="text-xl font-semibold"
+                         :class="
+                             summary.low_stock_count
+                                 ? 'text-amber-600'
+                                 : 'text-foreground'
+                         "
+                     >
+                         {{ summary.low_stock_count }}
+                     </p>
+                 </button>
 
-                <!-- Expiring -->
+                 <!-- Expiring -->
 
-                <button
-                    type="button"
-                    @click="selectSection('expiring')"
-                    class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
-                    :class="
-                        activeSection === 'expiring'
-                            ? 'border-primary ring-1 ring-primary'
-                            : ''
-                    "
-                >
-                    <p class="text-xs text-muted-foreground">
-                        Expiring Soon
-                    </p>
+                 <button
+                     type="button"
+                     @click="selectSection('expiring')"
+                     class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                     :class="
+                         activeSection === 'expiring'
+                             ? 'border-primary ring-1 ring-primary'
+                             : ''
+                     "
+                 >
+                     <p class="text-xs text-foreground/60">
+                         Expiring Soon
+                     </p>
 
-                    <p
-                        class="text-xl font-semibold"
-                        :class="
-                            summary.expiring_soon_count
-                                ? 'text-amber-600'
-                                : ''
-                        "
-                    >
-                        {{ summary.expiring_soon_count }}
-                    </p>
-                </button>
+                     <p
+                         class="text-xl font-semibold"
+                         :class="
+                             summary.expiring_soon_count
+                                 ? 'text-amber-600'
+                                 : 'text-foreground'
+                         "
+                     >
+                         {{ summary.expiring_soon_count }}
+                     </p>
+                 </button>
 
-                <!-- Out Of Stock -->
+                 <!-- Out Of Stock -->
 
-                <button
-                    type="button"
-                    @click="selectSection('out_of_stock')"
-                    class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
-                    :class="
-                        activeSection === 'out_of_stock'
-                            ? 'border-primary ring-1 ring-primary'
-                            : ''
-                    "
-                >
-                    <p class="text-xs text-muted-foreground">
-                        Out of Stock
-                    </p>
+                 <button
+                     type="button"
+                     @click="selectSection('out_of_stock')"
+                     class="rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+                     :class="
+                         activeSection === 'out_of_stock'
+                             ? 'border-primary ring-1 ring-primary'
+                             : ''
+                     "
+                 >
+                     <p class="text-xs text-foreground/60">
+                         Out of Stock
+                     </p>
 
-                    <p
-                        class="text-xl font-semibold"
-                        :class="
-                            summary.out_of_stock_count
-                                ? 'text-destructive'
-                                : ''
-                        "
-                    >
-                        {{ summary.out_of_stock_count }}
-                    </p>
-                </button>
-            </div>
+                     <p
+                         class="text-xl font-semibold"
+                         :class="
+                             summary.out_of_stock_count
+                                 ? 'text-destructive'
+                                 : 'text-foreground'
+                         "
+                     >
+                         {{ summary.out_of_stock_count }}
+                     </p>
+                 </button>
+             </div>
 
             <!-- ======================================================
                  TOTAL STOCK VALUE
@@ -500,7 +512,7 @@ const exportSheets = [
                 "
             >
                 <div class="flex items-center justify-between p-4">
-                    <h2 class="font-semibold">
+                    <h2 class="font-semibold text-foreground">
                         Total Stock Value
                     </h2>
 
@@ -517,19 +529,19 @@ const exportSheets = [
                 >
                     <thead class="bg-muted/50">
                         <tr>
-                            <th class="p-2 text-left">
+                            <th class="p-2 text-left text-foreground/70">
                                 Ingredient
                             </th>
 
-                            <th class="p-2 text-right">
+                            <th class="p-2 text-right text-foreground/70">
                                 Current Stock
                             </th>
 
-                            <th class="p-2 text-right">
+                            <th class="p-2 text-right text-foreground/70">
                                 Unit Cost
                             </th>
 
-                            <th class="p-2 text-right">
+                            <th class="p-2 text-right text-foreground/70">
                                 Total Value
                             </th>
                         </tr>
@@ -541,20 +553,20 @@ const exportSheets = [
                             :key="item.id"
                             class="border-t"
                         >
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ item.name }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{ item.total_stock }}
                                 {{ item.unit }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{ formatWholePeso(item.unit_cost) }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{ formatCurrency(item.total_value) }}
                             </td>
                         </tr>
@@ -562,7 +574,7 @@ const exportSheets = [
                         <tr v-if="!stockValueItems.length">
                             <td
                                 colspan="4"
-                                class="p-4 text-center text-muted-foreground"
+                                class="p-4 text-center text-foreground/60"
                             >
                                 No ingredients have a cost set yet.
                                 Add one from the ingredient's Edit dialog.
@@ -577,331 +589,450 @@ const exportSheets = [
                         <tr>
                             <td
                                 colspan="3"
-                                class="p-2 text-right font-semibold"
+                                class="p-2 text-right font-semibold text-foreground"
                             >
-                                Total
+                                Ingredient Subtotal
                             </td>
 
                             <td
-                                class="p-2 text-right font-semibold"
+                                class="p-2 text-right font-semibold text-foreground"
                             >
                                 {{
                                     formatCurrency(
-                                        summary.total_stock_value
+                                        stockValueItems.reduce(
+                                            (sum, i) =>
+                                                sum + Number(i.total_value),
+                                            0,
+                                        )
                                     )
                                 }}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
-            </div>
 
-            <!-- ======================================================
-                 LOW STOCK
-            ======================================================= -->
-
-            <div
-                class="overflow-x-auto rounded-lg border"
-                :class="
-                    activeSection === 'low_stock'
-                        ? 'block'
-                        : 'hidden'
-                "
-            >
-                <div class="flex items-center justify-between p-4">
-                    <h2 class="font-semibold">
-                        Low Stock Items
-                    </h2>
-
-                    <span
-                        v-if="lowStockItems.length"
-                        class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
-                    >
-                        {{ lowStockItems.length }}
-                    </span>
-                </div>
-
-                <table
-                    class="w-full min-w-[460px] border-t text-sm"
+                <!-- Finished Products (Pastry) -->
+                <div
+                    v-if="finishedStockValueItems.length"
+                    class="border-t"
                 >
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">
-                                Ingredient
-                            </th>
-
-                            <th class="p-2 text-right">
-                                Current Stock
-                            </th>
-
-                            <th class="p-2 text-right">
-                                Minimum
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="item in lowStockItems"
-                            :key="item.id"
-                            class="border-t"
-                        >
-                            <td class="p-2">
-                                {{ item.name }}
-                            </td>
-
-                            <td class="p-2 text-right">
-                                {{ item.total_stock }}
-                                {{ item.unit }}
-                            </td>
-
-                            <td class="p-2 text-right">
-                                {{ item.minimum_stock }}
-                                {{ item.unit }}
-                            </td>
-                        </tr>
-
-                        <tr v-if="!lowStockItems.length">
-                            <td
-                                colspan="3"
-                                class="p-4 text-center text-muted-foreground"
-                            >
-                                No low stock items
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ======================================================
-                 EXPIRING SOON
-            ======================================================= -->
-
-            <div
-                class="overflow-x-auto rounded-lg border"
-                :class="
-                    activeSection === 'expiring'
-                        ? 'block'
-                        : 'hidden'
-                "
-            >
-                <div class="flex items-center justify-between p-4">
-                    <h2 class="font-semibold">
-                        Expiring Soon
-                    </h2>
-
-                    <span
-                        v-if="expiringSoon.length"
-                        class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
-                    >
-                        {{ expiringSoon.length }}
-                    </span>
-                </div>
-
-                <table
-                    class="w-full min-w-[460px] border-t text-sm"
-                >
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">
-                                Ingredient
-                            </th>
-
-                            <th class="p-2 text-right">
-                                Remaining
-                            </th>
-
-                            <th class="p-2 text-right">
-                                Expiry Date
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="batch in expiringSoon"
-                            :key="batch.id"
-                            class="border-t"
-                        >
-                            <td class="p-2">
-                                {{ batch.ingredient_name }}
-                            </td>
-
-                            <td class="p-2 text-right">
-                                {{ batch.remaining_quantity }}
-                                {{ batch.unit }}
-                            </td>
-
-                            <td class="p-2 text-right">
-                                {{ formatDate(batch.expiry_date) }}
-                            </td>
-                        </tr>
-
-                        <tr v-if="!expiringSoon.length">
-                            <td
-                                colspan="3"
-                                class="p-4 text-center text-muted-foreground"
-                            >
-                                No batches expiring soon
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ======================================================
-                 OUT OF STOCK
-            ======================================================= -->
-
-            <div
-                class="overflow-x-auto rounded-lg border"
-                :class="
-                    activeSection === 'out_of_stock'
-                        ? 'block'
-                        : 'hidden'
-                "
-            >
-                <div class="flex items-center justify-between p-4">
-                    <h2 class="font-semibold">
-                        Out of Stock
-                    </h2>
-
-                    <span
-                        v-if="outOfStockItems.length"
-                        class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
-                    >
-                        {{ outOfStockItems.length }}
-                    </span>
-                </div>
-
-                <table
-                    class="w-full min-w-[400px] border-t text-sm"
-                >
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">
-                                Ingredient
-                            </th>
-
-                            <th class="p-2 text-left">
-                                Unit
-                            </th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        <tr
-                            v-for="item in outOfStockItems"
-                            :key="item.id"
-                            class="border-t"
-                        >
-                            <td class="p-2">
-                                {{ item.name }}
-                            </td>
-
-                            <td class="p-2">
-                                {{ item.unit }}
-                            </td>
-                        </tr>
-
-                        <tr v-if="!outOfStockItems.length">
-                            <td
-                                colspan="2"
-                                class="p-4 text-center text-muted-foreground"
-                            >
-                                Nothing out of stock
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ======================================================
-                 RECENT RESTOCK HISTORY
-            ======================================================= -->
-
-            <details
-                class="group overflow-x-auto rounded-lg border"
-            >
-                <summary
-                    class="flex cursor-pointer list-none items-center justify-between p-4 select-none"
-                >
-                    <div>
-                        <h2 class="font-semibold">
-                            Recent Restock History
-                        </h2>
-
-                        <p class="text-xs text-muted-foreground">
-                            Last 20 ingredient batches received
-                        </p>
-                    </div>
-
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between p-4">
+                        <h3 class="text-sm font-semibold text-foreground">
+                            Finished Products
+                        </h3>
                         <span
-                            v-if="restockHistory.length"
                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
                         >
-                            {{ filteredRestockHistory.length }}/{{
-                                restockHistory.length
-                            }}
+                            {{ finishedStockValueItems.length }}
                         </span>
-
-                        <ChevronDown
-                            class="h-4 w-4 transition-transform group-open:rotate-180"
-                        />
                     </div>
-                </summary>
 
-                <div
-                    class="flex flex-wrap items-center gap-3 border-t p-3"
-                >
-                    <input
-                        v-model="restockSearch"
-                        type="text"
-                        placeholder="Search ingredient..."
-                        class="h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
-
-                    <label
-                        class="flex items-center gap-1.5 text-xs text-muted-foreground"
+                    <table
+                        class="w-full min-w-[520px] border-t text-sm"
                     >
-                        <input
-                            v-model="restockPricedOnly"
-                            type="checkbox"
-                            class="h-3.5 w-3.5"
-                        />
+                        <thead class="bg-muted/50">
+                            <tr>
+                                <th class="p-2 text-left text-foreground/70">
+                                    Product
+                                </th>
 
-                        Priced only
-                    </label>
+                                <th class="p-2 text-right text-foreground/70">
+                                    Current Stock
+                                </th>
+
+                                <th class="p-2 text-right text-foreground/70">
+                                    Unit Price
+                                </th>
+
+                                <th class="p-2 text-right text-foreground/70">
+                                    Total Value
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr
+                                v-for="item in finishedStockValueItems"
+                                :key="`fp-${item.id}`"
+                                class="border-t"
+                            >
+                                <td class="p-2 text-foreground">
+                                    {{ item.name }}
+                                </td>
+
+                                <td class="p-2 text-right text-foreground">
+                                    {{ item.stock_quantity }}
+                                    {{ item.unit }}
+                                </td>
+
+                                <td class="p-2 text-right text-foreground">
+                                    {{ formatCurrency(Number(item.price)) }}
+                                </td>
+
+                                <td class="p-2 text-right text-foreground">
+                                    {{ formatCurrency(item.total_value) }}
+                                </td>
+                            </tr>
+                        </tbody>
+
+                        <tfoot class="border-t bg-muted/50">
+                            <tr>
+                                <td
+                                    colspan="3"
+                                    class="p-2 text-right font-semibold text-foreground"
+                                >
+                                    Finished Subtotal
+                                </td>
+
+                                <td
+                                    class="p-2 text-right font-semibold text-foreground"
+                                >
+                                    {{
+                                        formatCurrency(
+                                            finishedStockValueItems.reduce(
+                                                (sum, i) =>
+                                                    sum +
+                                                    Number(i.total_value),
+                                                0,
+                                            )
+                                        )
+                                    }}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
 
-                <table
-                    class="w-full min-w-[760px] border-t text-sm"
+                <!-- Combined grand total -->
+                <div
+                    v-if="stockValueItems.length || finishedStockValueItems.length"
+                    class="flex items-center justify-between border-t bg-muted/50 p-4"
                 >
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">
-                                Date Logged
-                            </th>
+                    <span class="font-semibold text-foreground">
+                        Total Stock Value
+                    </span>
+                    <span class="font-semibold text-foreground">
+                        {{ formatCurrency(summary.total_stock_value) }}
+                    </span>
+                </div>
+            </div>
 
-                            <th class="p-2 text-left">
-                                Ingredient
-                            </th>
+<!-- ======================================================
+                 LOW STOCK
+             ======================================================= -->
 
-                            <th class="p-2 text-right">
-                                Quantity Added
-                            </th>
+             <div
+                 class="overflow-x-auto rounded-lg border"
+                 :class="
+                     activeSection === 'low_stock'
+                         ? 'block'
+                         : 'hidden'
+                 "
+             >
+                 <div class="flex items-center justify-between p-4">
+                     <h2 class="font-semibold text-foreground">
+                         Low Stock Items
+                     </h2>
 
-                            <th class="p-2 text-right">
-                                Batch Expiry
-                            </th>
+                     <span
+                         v-if="lowStockItems.length"
+                         class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                     >
+                         {{ lowStockItems.length }}
+                     </span>
+                 </div>
 
-                            <th class="p-2 text-right">
-                                Price
-                            </th>
+                 <table
+                     class="w-full min-w-[460px] border-t text-sm"
+                 >
+                     <thead class="bg-muted/50">
+                         <tr>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Ingredient
+                             </th>
 
-                            <th class="p-2 text-left">
+                             <th class="p-2 text-right text-foreground/70">
+                                 Current Stock
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Minimum
+                             </th>
+                         </tr>
+                     </thead>
+
+                     <tbody>
+                         <tr
+                             v-for="item in lowStockItems"
+                             :key="item.id"
+                             class="border-t"
+                         >
+                             <td class="p-2 text-foreground">
+                                 {{ item.name }}
+                             </td>
+
+                             <td class="p-2 text-right text-foreground">
+                                 {{ item.total_stock }}
+                                 {{ item.unit }}
+                             </td>
+
+                             <td class="p-2 text-right text-foreground">
+                                 {{ item.minimum_stock }}
+                                 {{ item.unit }}
+                             </td>
+                         </tr>
+
+                         <tr v-if="!lowStockItems.length">
+                             <td
+                                 colspan="3"
+                                 class="p-4 text-center text-foreground/60"
+                             >
+                                 No low stock items
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </div>
+
+<!-- ======================================================
+                 EXPIRING SOON
+             ======================================================= -->
+
+             <div
+                 class="overflow-x-auto rounded-lg border"
+                 :class="
+                     activeSection === 'expiring'
+                         ? 'block'
+                         : 'hidden'
+                 "
+             >
+                 <div class="flex items-center justify-between p-4">
+                     <h2 class="font-semibold text-foreground">
+                         Expiring Soon
+                     </h2>
+
+                     <span
+                         v-if="expiringSoon.length"
+                         class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                     >
+                         {{ expiringSoon.length }}
+                     </span>
+                 </div>
+
+                 <table
+                     class="w-full min-w-[460px] border-t text-sm"
+                 >
+                     <thead class="bg-muted/50">
+                         <tr>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Ingredient
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Remaining
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Expiry Date
+                             </th>
+                         </tr>
+                     </thead>
+
+                     <tbody>
+                         <tr
+                             v-for="batch in expiringSoon"
+                             :key="batch.id"
+                             class="border-t"
+                         >
+                             <td class="p-2 text-foreground">
+                                 {{ batch.ingredient_name }}
+                             </td>
+
+                             <td class="p-2 text-right text-foreground">
+                                 {{ batch.remaining_quantity }}
+                                 {{ batch.unit }}
+                             </td>
+
+                             <td class="p-2 text-right text-foreground">
+                                 {{ formatDate(batch.expiry_date) }}
+                             </td>
+                         </tr>
+
+                         <tr v-if="!expiringSoon.length">
+                             <td
+                                 colspan="3"
+                                 class="p-4 text-center text-foreground/60"
+                             >
+                                 No batches expiring soon
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </div>
+
+<!-- ======================================================
+                 OUT OF STOCK
+             ======================================================= -->
+
+             <div
+                 class="overflow-x-auto rounded-lg border"
+                 :class="
+                     activeSection === 'out_of_stock'
+                         ? 'block'
+                         : 'hidden'
+                 "
+             >
+                 <div class="flex items-center justify-between p-4">
+                     <h2 class="font-semibold text-foreground">
+                         Out of Stock
+                     </h2>
+
+                     <span
+                         v-if="outOfStockItems.length"
+                         class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                     >
+                         {{ outOfStockItems.length }}
+                     </span>
+                 </div>
+
+                 <table
+                     class="w-full min-w-[400px] border-t text-sm"
+                 >
+                     <thead class="bg-muted/50">
+                         <tr>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Ingredient
+                             </th>
+
+                             <th class="p-2 text-left text-foreground/70">
+                                 Unit
+                             </th>
+                         </tr>
+                     </thead>
+
+                     <tbody>
+                         <tr
+                             v-for="item in outOfStockItems"
+                             :key="item.id"
+                             class="border-t"
+                         >
+                             <td class="p-2 text-foreground">
+                                 {{ item.name }}
+                             </td>
+
+                             <td class="p-2 text-foreground">
+                                 {{ item.unit }}
+                             </td>
+                         </tr>
+
+                         <tr v-if="!outOfStockItems.length">
+                             <td
+                                 colspan="2"
+                                 class="p-4 text-center text-foreground/60"
+                             >
+                                 Nothing out of stock
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </div>
+
+<!-- ======================================================
+                 RECENT RESTOCK HISTORY
+             ======================================================= -->
+
+             <details
+                 class="group overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+             >
+                 <summary
+                     class="flex cursor-pointer list-none items-center gap-3 p-4 select-none"
+                 >
+                     <div
+                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted"
+                     >
+                         <History class="h-5 w-5 text-foreground/60" />
+                     </div>
+
+                     <div class="flex-1">
+                         <h2 class="font-semibold leading-none text-foreground">
+                             Recent Restock History
+                         </h2>
+
+                         <p class="mt-1 text-xs text-foreground/60">
+                             Last 20 ingredient batches received
+                         </p>
+                     </div>
+
+                     <div class="flex items-center gap-2">
+                         <span
+                             v-if="restockHistory.length"
+                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                         >
+                             {{ filteredRestockHistory.length }}/{{
+                                 restockHistory.length
+                             }}
+                         </span>
+
+                         <ChevronDown
+                             class="h-4 w-4 transition-transform group-open:rotate-180"
+                         />
+                     </div>
+                 </summary>
+
+                 <div
+                     class="flex flex-wrap items-center gap-3 border-t p-3"
+                 >
+                     <input
+                         v-model="restockSearch"
+                         type="text"
+                         placeholder="Search ingredient..."
+                         class="h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                     />
+
+                     <label
+                         class="flex items-center gap-1.5 text-xs text-foreground/60"
+                     >
+                         <input
+                             v-model="restockPricedOnly"
+                             type="checkbox"
+                             class="h-3.5 w-3.5"
+                         />
+
+                         Priced only
+                     </label>
+                 </div>
+
+                 <table
+                     class="w-full min-w-[760px] border-t text-sm"
+                 >
+                     <thead class="bg-muted/50">
+                         <tr>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Date Logged
+                             </th>
+
+                             <th class="p-2 text-left text-foreground/70">
+                                 Ingredient
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Quantity Added
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Batch Expiry
+                             </th>
+
+                             <th class="p-2 text-right text-foreground/70">
+                                 Price
+                             </th>
+
+                            <th class="p-2 text-left text-foreground/70">
                                 Note
+                            </th>
+
+                            <th class="p-2 text-left text-foreground/70">
+                                Stocked By
                             </th>
                         </tr>
                     </thead>
@@ -912,20 +1043,20 @@ const exportSheets = [
                             :key="log.id"
                             class="border-t"
                         >
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ formatDateTime(log.created_at) }}
                             </td>
 
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ log.ingredient_name }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 +{{ log.quantity_change }}
                                 {{ log.unit }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{
                                     log.expiry_date
                                         ? formatDate(log.expiry_date)
@@ -933,7 +1064,7 @@ const exportSheets = [
                                 }}
                             </td>
 
-                            <td class="p-2 text-right">
+                            <td class="p-2 text-right text-foreground">
                                 {{
                                     log.price !== null
                                         ? formatWholePeso(log.price)
@@ -941,8 +1072,12 @@ const exportSheets = [
                                 }}
                             </td>
 
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ log.note ?? '—' }}
+                            </td>
+
+                            <td class="p-2 text-foreground">
+                                {{ log.user_name ?? '—' }}
                             </td>
                         </tr>
 
@@ -952,103 +1087,113 @@ const exportSheets = [
                             "
                         >
                             <td
-                                colspan="6"
-                                class="p-4 text-center text-muted-foreground"
+                                colspan="7"
+                                class="p-4 text-center text-foreground/60"
                             >
-                                {{
-                                    restockHistory.length
-                                        ? 'No restocks match your filters'
-                                        : 'No restock history yet'
-                                }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
+                                 {{
+                                     restockHistory.length
+                                         ? 'No restocks match your filters'
+                                         : 'No restock history yet'
+                                 }}
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </details>
 
-            <!-- ======================================================
+<!-- ======================================================
                  PRODUCT RESTOCK HISTORY
-            ======================================================= -->
+             ======================================================= -->
 
-            <details
-                class="group overflow-x-auto rounded-lg border"
-            >
-                <summary
-                    class="flex cursor-pointer list-none items-center justify-between p-4 select-none"
-                >
-                    <div>
-                        <h2 class="font-semibold">
-                            Recent Product Restock History
-                        </h2>
+             <details
+                 class="group overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
+             >
+                 <summary
+                     class="flex cursor-pointer list-none items-center gap-3 p-4 select-none"
+                 >
+                     <div
+                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted"
+                     >
+                         <PackagePlus class="h-5 w-5 text-foreground/60" />
+                     </div>
 
-                        <p class="text-xs text-muted-foreground">
-                            Last 20 finished-stock adjustments
-                            (cookies, etc.)
-                        </p>
-                    </div>
+                     <div class="flex-1">
+                         <h2 class="font-semibold leading-none text-foreground">
+                             Recent Product Restock History
+                         </h2>
 
-                    <div class="flex items-center gap-2">
-                        <span
-                            v-if="productRestockHistory.length"
-                            class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
-                        >
-                            {{
-                                filteredProductRestockHistory.length
-                            }}/{{ productRestockHistory.length }}
-                        </span>
+                         <p class="mt-1 text-xs text-foreground/60">
+                             Last 20 finished-stock adjustments
+                             (cookies, etc.)
+                         </p>
+                     </div>
 
-                        <ChevronDown
-                            class="h-4 w-4 transition-transform group-open:rotate-180"
-                        />
-                    </div>
-                </summary>
+                     <div class="flex items-center gap-2">
+                         <span
+                             v-if="productRestockHistory.length"
+                             class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium"
+                         >
+                             {{
+                                 filteredProductRestockHistory.length
+                             }}/{{ productRestockHistory.length }}
+                         </span>
 
-                <div
-                    class="flex flex-wrap items-center gap-3 border-t p-3"
-                >
-                    <input
-                        v-model="productRestockSearch"
-                        type="text"
-                        placeholder="Search product..."
-                        class="h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                    />
+                         <ChevronDown
+                             class="h-4 w-4 transition-transform group-open:rotate-180"
+                         />
+                     </div>
+                 </summary>
 
-                    <label
-                        class="flex items-center gap-1.5 text-xs text-muted-foreground"
-                    >
-                        <input
-                            v-model="productRestockIncreasesOnly"
-                            type="checkbox"
-                            class="h-3.5 w-3.5"
-                        />
+                 <div
+                     class="flex flex-wrap items-center gap-3 border-t p-3"
+                 >
+                     <input
+                         v-model="productRestockSearch"
+                         type="text"
+                         placeholder="Search product..."
+                         class="h-8 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                     />
 
-                        Increases only
-                    </label>
-                </div>
+                     <label
+                         class="flex items-center gap-1.5 text-xs text-foreground/60"
+                     >
+                         <input
+                             v-model="productRestockIncreasesOnly"
+                             type="checkbox"
+                             class="h-3.5 w-3.5"
+                         />
 
-                <table
-                    class="w-full min-w-[640px] border-t text-sm"
-                >
-                    <thead class="bg-muted/50">
-                        <tr>
-                            <th class="p-2 text-left">
-                                Date Logged
-                            </th>
+                         Increases only
+                     </label>
+                 </div>
 
-                            <th class="p-2 text-left">
-                                Product
-                            </th>
+                 <table
+                     class="w-full min-w-[640px] border-t text-sm"
+                 >
+                     <thead class="bg-muted/50">
+                         <tr>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Date Logged
+                             </th>
 
-                            <th class="p-2 text-left">
-                                Type
-                            </th>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Product
+                             </th>
 
-                            <th class="p-2 text-right">
-                                Quantity Change
-                            </th>
+                             <th class="p-2 text-left text-foreground/70">
+                                 Type
+                             </th>
 
-                            <th class="p-2 text-left">
+                             <th class="p-2 text-right text-foreground/70">
+                                 Quantity Change
+                             </th>
+
+                            <th class="p-2 text-left text-foreground/70">
                                 Note
+                            </th>
+
+                            <th class="p-2 text-left text-foreground/70">
+                                Stocked By
                             </th>
                         </tr>
                     </thead>
@@ -1059,11 +1204,11 @@ const exportSheets = [
                             :key="log.id"
                             class="border-t"
                         >
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ formatDateTime(log.created_at) }}
                             </td>
 
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ log.product_name }}
                             </td>
 
@@ -1095,8 +1240,12 @@ const exportSheets = [
                                 }}{{ log.quantity_change }} pcs
                             </td>
 
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ log.note ?? '—' }}
+                            </td>
+
+                            <td class="p-2 text-foreground">
+                                {{ log.user_name ?? '—' }}
                             </td>
                         </tr>
 
@@ -1106,19 +1255,19 @@ const exportSheets = [
                             "
                         >
                             <td
-                                colspan="5"
-                                class="p-4 text-center text-muted-foreground"
+                                colspan="6"
+                                class="p-4 text-center text-foreground/60"
                             >
-                                {{
-                                    productRestockHistory.length
-                                        ? 'No entries match your filters'
-                                        : 'No product restock history yet'
-                                }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </details>
+                                 {{
+                                     productRestockHistory.length
+                                         ? 'No entries match your filters'
+                                         : 'No product restock history yet'
+                                 }}
+                             </td>
+                         </tr>
+                     </tbody>
+                 </table>
+             </details>
         </div>
     </AppLayout>
 </template>

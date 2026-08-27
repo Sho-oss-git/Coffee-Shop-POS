@@ -71,11 +71,12 @@ class CookieController extends Controller
             return back()->with('error', "That would take stock below 0 (currently {$product->stock_quantity}).");
         }
 
-        DB::transaction(function () use ($product, $validated, $newQuantity) {
+        DB::transaction(function () use ($product, $validated, $newQuantity, $request) {
             $product->update(['stock_quantity' => $newQuantity]);
 
             InventoryLog::create([
                 'product_id' => $product->id,
+                'user_id' => $request->user()?->id,
                 'type' => $validated['delta'] > 0 ? 'restock' : 'adjustment',
                 'quantity_change' => $validated['delta'],
                 'note' => $validated['note'] ?? null,

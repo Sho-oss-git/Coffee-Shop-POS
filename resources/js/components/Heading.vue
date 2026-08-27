@@ -11,8 +11,8 @@ defineProps<Props>();
 
 <template>
     <div class="mb-8 space-y-0.5">
-        <h2 class="text-xl font-semibold tracking-tight">{{ title }}</h2>
-        <p v-if="description" class="text-sm text-muted-foreground">
+        <h2 class="text-xl font-semibold tracking-tight text-foreground">{{ title }}</h2>
+        <p v-if="description" class="text-sm text-foreground/60">
             {{ description }}
         </p>
     </div>

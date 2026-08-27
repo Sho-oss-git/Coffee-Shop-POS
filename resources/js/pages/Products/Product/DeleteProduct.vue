@@ -55,7 +55,7 @@ defineExpose({ open });
             <DialogHeader>
                 <DialogTitle>{{ isAdmin ? 'Delete Product' : 'Request Product Deletion' }}</DialogTitle>
             </DialogHeader>
-            <p class="text-sm text-muted-foreground">
+            <p class="text-sm text-foreground/70">
                 <template v-if="isAdmin">
                     Are you sure you want to delete "{{ target?.name }}"? This cannot be undone.
                 </template>

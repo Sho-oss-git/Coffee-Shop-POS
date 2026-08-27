@@ -203,19 +203,19 @@ const peakLabel = computed(() => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex min-w-0 flex-col gap-6 bg-muted/20 p-3 sm:p-4 lg:p-6">
+        <div class="flex min-w-0 flex-col gap-6 bg-background p-3 sm:p-4 lg:p-6">
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-muted-foreground">{{ date }}</p>
-                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    <p class="text-sm font-medium text-foreground/70">{{ date }}</p>
+                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl text-foreground">
                         {{ greeting }}, {{ page.props.auth.user.name }} <span aria-hidden="true">👋</span>
                     </h1>
-                    <p class="text-sm text-muted-foreground">Here's what's happening at the counter {{ periodNoun }}.</p>
+                    <p class="text-sm text-foreground/60">Here's what's happening at the counter {{ periodNoun }}.</p>
                 </div>
                 <div class="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:justify-end">
-                    <span class="text-sm font-semibold tabular-nums text-muted-foreground" aria-live="polite">{{ currentTime }}</span>
+                    <span class="text-sm font-semibold tabular-nums text-foreground/70" aria-live="polite">{{ currentTime }}</span>
 
-                    <a v-if="page.props.auth.user.role !== 'cashier'" href="/reports/sales" class="inline-flex w-full items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted sm:w-auto">
+                    <a v-if="page.props.auth.user.role !== 'cashier'" href="/reports/sales" class="inline-flex w-full items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted sm:w-auto">
                         View sales report <ArrowUpRight class="h-4 w-4" />
                     </a>
                 </div>
@@ -223,10 +223,10 @@ const peakLabel = computed(() => {
 
             <div
                 v-if="page.props.auth.user.role !== 'admin'"
-                class="flex items-center justify-between rounded-xl border border-sidebar-border/70 bg-background p-4 shadow-sm dark:border-sidebar-border"
+                class="flex items-center justify-between rounded-xl border border-border bg-background p-4 shadow-sm"
             >
                 <div>
-                    <p class="text-sm text-muted-foreground">Your status</p>
+                    <p class="text-sm text-foreground/70">Your status</p>
                     <StatusBadge :status="page.props.auth.user.status" />
                 </div>
                 <ClockStatusToggle :status="page.props.auth.user.status" />
@@ -260,8 +260,8 @@ const peakLabel = computed(() => {
                         <component :is="metric.icon" class="h-5 w-5" :class="metric.tone" />
                     </span>
                     <div class="mt-3">
-                        <p class="text-xl font-semibold">{{ metric.value }}</p>
-                        <p class="text-xs text-muted-foreground">{{ metric.label }}</p>
+                        <p class="text-xl font-semibold text-foreground">{{ metric.value }}</p>
+                        <p class="text-xs text-foreground/60">{{ metric.label }}</p>
                     </div>
                 </div>
             </div>
@@ -270,12 +270,12 @@ const peakLabel = computed(() => {
               <section class="rounded-xl border bg-background shadow-sm">
     <div class="flex flex-wrap items-center justify-between gap-2 border-b p-4">
         <div>
-            <h2 class="font-semibold">{{ trendTitle }}</h2>
-            <p class="text-xs text-muted-foreground">{{ trendSubtitle }}</p>
+            <h2 class="font-semibold text-foreground">{{ trendTitle }}</h2>
+            <p class="text-xs text-foreground/60">{{ trendSubtitle }}</p>
         </div>
 
         <div class="flex items-center gap-3">
-            <p v-if="peakHour && peakHour.sales > 0" class="text-xs text-muted-foreground">
+            <p v-if="peakHour && peakHour.sales > 0" class="text-xs text-foreground/60">
                 {{ peakLabel }}:
                 <span class="font-medium text-foreground">{{ peakHour.label }}</span>
                 ({{ money(peakHour.sales) }})
@@ -342,35 +342,35 @@ const peakLabel = computed(() => {
                 {{ p.label }}
             </text>
         </svg>
-        <p v-else class="py-8 text-center text-sm text-muted-foreground">Not enough data yet to show a trend.</p>
+        <p v-else class="py-8 text-center text-sm text-foreground/60">Not enough data yet to show a trend.</p>
     </div>
 </section>
 
                 <section class="flex flex-col gap-4 rounded-xl border bg-background p-4 shadow-sm">
-                    <div><h2 class="font-semibold">Payment methods</h2><p class="text-xs text-muted-foreground">{{ periodPossessive }} transactions by method</p></div>
+                    <div><h2 class="font-semibold text-foreground">Payment methods</h2><p class="text-xs text-foreground/60">{{ periodPossessive }} transactions by method</p></div>
 
                     <div class="flex flex-col items-center gap-4 py-2">
                         <div class="relative h-36 w-36 rounded-full" :style="{ background: donutGradient }">
                             <div class="absolute inset-[16px] flex flex-col items-center justify-center rounded-full bg-background">
-                                <span class="text-xl font-bold">{{ totalCount }}</span>
-                                <span class="text-[11px] text-muted-foreground">transactions</span>
+                                <span class="text-xl font-bold text-foreground">{{ totalCount }}</span>
+                                <span class="text-[11px] text-foreground/60">transactions</span>
                             </div>
                         </div>
                         <div class="w-full space-y-2 text-sm">
                             <div class="flex items-center justify-between">
-                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>Cash</span>
-                                <span class="font-medium">{{ cashCount }} ({{ cashPercent }}%)</span>
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span><span class="text-foreground">Cash</span></span>
+                                <span class="font-medium text-foreground">{{ cashCount }} ({{ cashPercent }}%)</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>GCash</span>
-                                <span class="font-medium">{{ gcashCount }} ({{ gcashPercent }}%)</span>
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-foreground">GCash</span></span>
+                                <span class="font-medium text-foreground">{{ gcashCount }} ({{ gcashPercent }}%)</span>
                             </div>
                         </div>
                     </div>
 
                     <a :href="page.props.auth.user.role === 'cashier' ? route('cashier.products.index') : route('products.index')" class="mt-auto flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50">
-                        <span class="flex items-center gap-3"><Package class="h-4 w-4 text-sky-600" /><span class="text-sm font-medium">Available products</span></span>
-                        <span class="text-sm font-semibold">{{ productCount }}</span>
+                        <span class="flex items-center gap-3"><Package class="h-4 w-4 text-sky-600" /><span class="text-sm font-medium text-foreground">Available products</span></span>
+                        <span class="text-sm font-semibold text-foreground">{{ productCount }}</span>
                     </a>
                 </section>
             </div>

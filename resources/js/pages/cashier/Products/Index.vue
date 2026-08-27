@@ -329,19 +329,19 @@ function handlePrintReceipt() {
             <!-- Left: Product listing -->
             <div class="flex min-w-0 flex-col gap-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 class="text-xl font-semibold">Products</h1>
+                    <h1 class="text-xl font-semibold text-foreground">Products</h1>
                 </div>
 
                 <div class="flex flex-col gap-3">
                     <div class="relative w-full sm:max-w-xs">
-                        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" />
                         <Input v-model="search" type="text" placeholder="Search products..." class="w-full pl-9" />
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <select
                             v-model="categoryFilter"
-                            class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
+                            class="h-9 min-w-[140px] flex-1 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring sm:flex-none"
                         >
                             <option value="">All Categories</option>
                             <option v-for="cat in props.categories" :key="cat.id" :value="cat.name">{{ cat.name }}</option>
@@ -350,12 +350,12 @@ function handlePrintReceipt() {
                         <button
                             v-if="hasActiveFilters"
                             type="button"
-                            class="text-sm text-muted-foreground underline-offset-2 hover:underline"
+                            class="text-sm text-foreground/60 underline-offset-2 hover:underline"
                             @click="clearFilters"
                         >
                             Clear filters
                         </button>
-                        <Loader2 v-if="isFiltering" class="h-4 w-4 animate-spin text-muted-foreground" />
+                        <Loader2 v-if="isFiltering" class="h-4 w-4 animate-spin text-foreground/60" />
                     </div>
                 </div>
 
@@ -426,7 +426,7 @@ function handlePrintReceipt() {
                         </section>
                     </div>
 
-                    <div v-else class="flex min-h-[250px] flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground">
+                    <div v-else class="flex min-h-[250px] flex-col items-center justify-center gap-3 px-4 text-center text-foreground/60">
                         <ImageOff class="h-10 w-10" />
                         <p v-if="hasActiveFilters">No products match your filters.</p>
                         <p v-else>No products available yet.</p>

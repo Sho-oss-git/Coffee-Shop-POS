@@ -38,7 +38,7 @@ defineExpose({ open });
             <DialogHeader>
                 <DialogTitle>Delete Category</DialogTitle>
             </DialogHeader>
-            <p class="text-sm text-muted-foreground">
+            <p class="text-sm text-foreground/70">
                 Are you sure you want to delete "{{ target?.name }}"? This cannot be undone.
             </p>
             <DialogFooter>

@@ -57,7 +57,7 @@ defineExpose({ open });
             </form>
 
             <div class="mt-2 space-y-2 border-t pt-4">
-                <Label class="text-xs text-muted-foreground">Existing Categories</Label>
+                <Label class="text-xs text-foreground/60">Existing Categories</Label>
                 <div class="max-h-72 space-y-2 overflow-auto">
                     <CategoryEdit
                         v-for="cat in props.categories"
@@ -65,7 +65,7 @@ defineExpose({ open });
                         :category="cat"
                         @delete="deleteRef?.open(cat)"
                     />
-                    <p v-if="props.categories.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                    <p v-if="props.categories.length === 0" class="py-4 text-center text-sm text-foreground/60">
                         No categories yet. Add your first one above.
                     </p>
                 </div>

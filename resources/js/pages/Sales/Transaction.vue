@@ -113,17 +113,17 @@ const donutGradient = computed(() => {
     <Head title="Sale Transaction" />
 
     <AppLayout>
-        <div class="flex min-w-0 flex-col gap-6 bg-muted/20 p-3 sm:p-4 lg:p-6">
+        <div class="flex min-w-0 flex-col gap-6 bg-background p-3 sm:p-4 lg:p-6">
             <!-- Header -->
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-muted-foreground">{{ formatDateLabel(date) }}</p>
-                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Sales Monitoring</h1>
-                    <p class="text-sm text-muted-foreground">Live view of today's sales.</p>
+                    <p class="text-sm font-medium text-foreground/70">{{ formatDateLabel(date) }}</p>
+                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl text-foreground">Sales Monitoring</h1>
+                    <p class="text-sm text-foreground/60">Live view of today's sales.</p>
                 </div>
                 <Link
                     :href="route('sales-history')"
-                    class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium shadow-sm hover:bg-muted"
+                    class="inline-flex items-center justify-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted"
                 >
                     View all transactions <ArrowUpRight class="h-4 w-4" />
                 </Link>
@@ -149,8 +149,8 @@ const donutGradient = computed(() => {
                         <component :is="metric.icon" class="h-5 w-5" :class="metric.tone" />
                     </span>
                     <div class="mt-3">
-                        <p class="text-xl font-semibold">{{ metric.value }}</p>
-                        <p class="text-xs text-muted-foreground">{{ metric.label }}</p>
+                        <p class="text-xl font-semibold text-foreground">{{ metric.value }}</p>
+                        <p class="text-xs text-foreground/60">{{ metric.label }}</p>
                     </div>
                 </div>
             </div>
@@ -160,8 +160,8 @@ const donutGradient = computed(() => {
                 <section class="min-w-0 overflow-hidden rounded-xl border bg-background shadow-sm">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b p-4">
                         <div>
-                            <h2 class="font-semibold">Recent Transactions</h2>
-                            <p class="text-xs text-muted-foreground">Latest sales as they come in</p>
+                            <h2 class="font-semibold text-foreground">Recent Transactions</h2>
+                            <p class="text-xs text-foreground/60">Latest sales as they come in</p>
                         </div>
                         <Link :href="route('sales-history')" class="text-sm text-primary hover:underline"> View All → </Link>
                     </div>
@@ -169,30 +169,30 @@ const donutGradient = computed(() => {
                         <table class="w-full min-w-[620px] text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
-                                    <th class="p-2 text-left">Time</th>
-                                    <th class="p-2 text-left">Transaction</th>
-                                    <th class="p-2 text-left">Cashier</th>
-                                    <th class="p-2 text-left">Payment</th>
-                                    <th class="p-2 text-right">Total</th>
-                                    <th class="p-2 text-left">Status</th>
+                                    <th class="p-2 text-left text-foreground/70">Time</th>
+                                    <th class="p-2 text-left text-foreground/70">Transaction</th>
+                                    <th class="p-2 text-left text-foreground/70">Cashier</th>
+                                    <th class="p-2 text-left text-foreground/70">Payment</th>
+                                    <th class="p-2 text-right text-foreground/70">Total</th>
+                                    <th class="p-2 text-left text-foreground/70">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="t in recentTransactions" :key="t.id" class="border-t">
-                                    <td class="p-2">{{ t.time }}</td>
-                                    <td class="p-2">#{{ t.id }}</td>
-                                    <td class="p-2">{{ t.cashier }}</td>
+                                    <td class="p-2 text-foreground">{{ t.time }}</td>
+                                    <td class="p-2 text-foreground">#{{ t.id }}</td>
+                                    <td class="p-2 text-foreground">{{ t.cashier }}</td>
                                     <td class="p-2">
                                         <span class="inline-flex items-center gap-1 text-xs">
                                             <Wallet class="h-3.5 w-3.5" :class="t.payment_method === 'gcash' ? 'text-amber-500' : 'text-emerald-600'" />
-                                            {{ paymentLabel(t.payment_method) }}
+                                            <span class="text-foreground">{{ paymentLabel(t.payment_method) }}</span>
                                         </span>
                                     </td>
-                                    <td class="p-2 text-right">{{ money(t.total) }}</td>
-                                    <td class="p-2 capitalize">{{ t.status }}</td>
+                                    <td class="p-2 text-right text-foreground">{{ money(t.total) }}</td>
+                                    <td class="p-2 capitalize text-foreground">{{ t.status }}</td>
                                 </tr>
                                 <tr v-if="!recentTransactions.length">
-                                    <td colspan="6" class="p-4 text-center text-muted-foreground">No transactions yet today</td>
+                                    <td colspan="6" class="p-4 text-center text-foreground/60">No transactions yet today</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -202,29 +202,29 @@ const donutGradient = computed(() => {
                 <!-- Payment methods -->
                 <section class="flex flex-col gap-4 rounded-xl border bg-background p-4 shadow-sm">
                     <div>
-                        <h2 class="font-semibold">Payment methods</h2>
-                        <p class="text-xs text-muted-foreground">Today's transactions by method</p>
+                        <h2 class="font-semibold text-foreground">Payment methods</h2>
+                        <p class="text-xs text-foreground/60">Today's transactions by method</p>
                     </div>
 
                     <div v-if="salesByPaymentMethod.length" class="flex flex-col items-center gap-4 py-2">
                         <div class="relative h-36 w-36 rounded-full" :style="{ background: donutGradient }">
                             <div class="absolute inset-[16px] flex flex-col items-center justify-center rounded-full bg-background">
-                                <span class="text-xl font-bold">{{ totalPaymentCount }}</span>
-                                <span class="text-[11px] text-muted-foreground">transactions</span>
+                                <span class="text-xl font-bold text-foreground">{{ totalPaymentCount }}</span>
+                                <span class="text-[11px] text-foreground/60">transactions</span>
                             </div>
                         </div>
                         <div class="w-full space-y-2 text-sm">
                             <div class="flex items-center justify-between">
-                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>Cash</span>
-                                <span class="font-medium">{{ cashEntry?.count ?? 0 }} ({{ cashPercent }}%) · {{ money(cashEntry?.total ?? 0) }}</span>
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span><span class="text-foreground">Cash</span></span>
+                                <span class="font-medium text-foreground">{{ cashEntry?.count ?? 0 }} ({{ cashPercent }}%) · {{ money(cashEntry?.total ?? 0) }}</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>GCash</span>
-                                <span class="font-medium">{{ gcashEntry?.count ?? 0 }} ({{ gcashPercent }}%) · {{ money(gcashEntry?.total ?? 0) }}</span>
+                                <span class="flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><span class="text-foreground">GCash</span></span>
+                                <span class="font-medium text-foreground">{{ gcashEntry?.count ?? 0 }} ({{ gcashPercent }}%) · {{ money(gcashEntry?.total ?? 0) }}</span>
                             </div>
                         </div>
                     </div>
-                    <p v-else class="py-8 text-center text-sm text-muted-foreground">No sales yet today</p>
+                    <p v-else class="py-8 text-center text-sm text-foreground/60">No sales yet today</p>
                 </section>
             </div>
 
@@ -232,8 +232,8 @@ const donutGradient = computed(() => {
                 <!-- Top products -->
                 <section class="rounded-xl border bg-background shadow-sm">
                     <div class="border-b p-4">
-                        <h2 class="font-semibold">Today's Top Products</h2>
-                        <p class="text-xs text-muted-foreground">Best sellers so far today</p>
+                        <h2 class="font-semibold text-foreground">Today's Top Products</h2>
+                        <p class="text-xs text-foreground/60">Best sellers so far today</p>
                     </div>
                     <ol class="divide-y">
                         <li v-for="(product, index) in topProducts" :key="product.name" class="flex items-center justify-between p-3 text-sm">
@@ -241,36 +241,36 @@ const donutGradient = computed(() => {
                                 <span class="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/10 text-xs font-semibold text-sky-600">
                                     {{ index + 1 }}
                                 </span>
-                                {{ product.name }}
+                                <span class="text-foreground">{{ product.name }}</span>
                             </span>
-                            <span class="font-medium">{{ product.quantity }} sold</span>
+                            <span class="font-medium text-foreground">{{ product.quantity }} sold</span>
                         </li>
-                        <li v-if="!topProducts.length" class="p-4 text-center text-sm text-muted-foreground">No sales yet today</li>
+                        <li v-if="!topProducts.length" class="p-4 text-center text-sm text-foreground/60">No sales yet today</li>
                     </ol>
                 </section>
 
                 <!-- Sales by cashier -->
                 <section class="rounded-xl border bg-background shadow-sm">
                     <div class="border-b p-4">
-                        <h2 class="font-semibold">Sales by Cashier</h2>
-                        <p class="text-xs text-muted-foreground">Performance per cashier today</p>
+                        <h2 class="font-semibold text-foreground">Sales by Cashier</h2>
+                        <p class="text-xs text-foreground/60">Performance per cashier today</p>
                     </div>
                     <table class="w-full text-sm">
                         <thead class="bg-muted/50">
                             <tr>
-                                <th class="p-2 text-left">Cashier</th>
-                                <th class="p-2 text-right">Transactions</th>
-                                <th class="p-2 text-right">Sales</th>
+                                <th class="p-2 text-left text-foreground/70">Cashier</th>
+                                <th class="p-2 text-right text-foreground/70">Transactions</th>
+                                <th class="p-2 text-right text-foreground/70">Sales</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="c in salesByCashier" :key="c.cashier" class="border-t">
-                                <td class="p-2">{{ c.cashier }}</td>
-                                <td class="p-2 text-right">{{ c.transaction_count }}</td>
-                                <td class="p-2 text-right">{{ money(c.sales) }}</td>
+                                <td class="p-2 text-foreground">{{ c.cashier }}</td>
+                                <td class="p-2 text-right text-foreground">{{ c.transaction_count }}</td>
+                                <td class="p-2 text-right text-foreground">{{ money(c.sales) }}</td>
                             </tr>
                             <tr v-if="!salesByCashier.length">
-                                <td colspan="3" class="p-4 text-center text-muted-foreground">No sales yet today</td>
+                                <td colspan="3" class="p-4 text-center text-foreground/60">No sales yet today</td>
                             </tr>
                         </tbody>
                     </table>

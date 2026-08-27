@@ -23,9 +23,9 @@ class StoreActionRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type' => ['required', 'in:inventory_adjustment,price_change,product_deletion,transaction_correction,other'],
+            'type' => ['required', 'in:inventory_adjustment,price_change,product_deletion,ingredient_deletion,transaction_correction,other'],
             'reason' => ['required', 'string', 'max:2000'],
-            'target_type' => ['nullable', 'in:product,transaction'],
+            'target_type' => ['nullable', 'in:product,ingredient,transaction'],
             'target_id' => ['nullable', 'integer', 'min:1'],
             'payload' => ['nullable', 'array'],
             'payload.action' => ['nullable', 'in:refund,void'],

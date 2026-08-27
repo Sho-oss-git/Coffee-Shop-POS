@@ -138,8 +138,8 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
         <div class="space-y-6 p-3 sm:p-4">
             <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold">Transaction History</h1>
-                    <p class="text-sm text-muted-foreground">Browse your past transactions</p>
+                    <h1 class="text-2xl font-semibold text-foreground">Transaction History</h1>
+                    <p class="text-sm text-foreground/60">Browse your past transactions</p>
                 </div>
 
                 <div class="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
@@ -147,7 +147,7 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                         v-for="filter in statusFilters"
                         :key="filter.value"
                         type="button"
-                        class="rounded-md border px-3 py-1.5 text-sm capitalize transition-colors"
+                        class="rounded-md border px-3 py-1.5 text-sm capitalize transition-colors text-foreground"
                         :class="
                             props.filters.status === filter.value
                                 ? 'bg-primary text-primary-foreground'
@@ -162,8 +162,8 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
 
             <div class="overflow-x-auto rounded-lg border">
                 <div class="flex items-center justify-between border-b p-4">
-                    <h2 class="font-semibold">Transactions</h2>
-                    <p class="text-xs text-muted-foreground">
+                    <h2 class="font-semibold text-foreground">Transactions</h2>
+                    <p class="text-xs text-foreground/60">
                         <template v-if="transactions.total">
                             Showing {{ transactions.from }}–{{ transactions.to }} of {{ transactions.total }}
                         </template>
@@ -173,7 +173,7 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
 
                 <div
                     v-if="transactions.data.length === 0"
-                    class="flex min-h-[220px] flex-col items-center justify-center gap-3 p-6 text-center text-muted-foreground"
+                    class="flex min-h-[220px] flex-col items-center justify-center gap-3 p-6 text-center text-foreground/60"
                 >
                     <Receipt class="h-10 w-10" />
                     <p>No transactions found for this filter.</p>
@@ -183,24 +183,24 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                     <thead class="bg-muted/50">
                         <tr>
                             <th class="w-8 p-2"></th>
-                            <th class="p-2 text-left">Transaction No.</th>
-                            <th class="p-2 text-left">Date &amp; Time</th>
-                            <th class="p-2 text-left">Payment</th>
-                            <th class="p-2 text-right">Total</th>
-                            <th class="p-2 text-left">Status</th>
+<th class="p-2 text-left text-foreground/70">Transaction No.</th>
+                            <th class="p-2 text-left text-foreground/70">Date & Time</th>
+                            <th class="p-2 text-left text-foreground/70">Payment</th>
+                            <th class="p-2 text-right text-foreground/70">Total</th>
+                            <th class="p-2 text-left text-foreground/70">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template v-for="t in transactions.data" :key="t.id">
                             <tr class="cursor-pointer border-t hover:bg-muted/30" @click="toggleExpanded(t.id)">
-                                <td class="p-2 text-muted-foreground">
+                                <td class="p-2 text-foreground/60">
                                     <ChevronDown v-if="expandedId === t.id" class="h-4 w-4" />
                                     <ChevronRight v-else class="h-4 w-4" />
                                 </td>
-                                <td class="p-2 font-mono font-medium">{{ t.transaction_no }}</td>
-                                <td class="p-2">{{ formatDateTime(t.created_at) }}</td>
-                                <td class="p-2">{{ t.payment_method === 'gcash' ? 'GCash' : 'Cash' }}</td>
-                                <td class="p-2 text-right font-medium">{{ formatCurrency(t.total) }}</td>
+                                <td class="p-2 font-mono font-medium text-foreground">{{ t.transaction_no }}</td>
+                                <td class="p-2 text-foreground">{{ formatDateTime(t.created_at) }}</td>
+                                <td class="p-2 text-foreground">{{ t.payment_method === 'gcash' ? 'GCash' : 'Cash' }}</td>
+                                <td class="p-2 text-right font-medium text-foreground">{{ formatCurrency(t.total) }}</td>
                                 <td class="p-2">
                                     <span class="rounded-full px-2 py-0.5 text-xs font-medium capitalize" :class="statusClasses(t.status)">
                                         {{ t.status }}
@@ -213,7 +213,7 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                                     <div class="flex flex-col gap-4 p-4">
                                         <table class="w-full min-w-[420px] text-xs">
                                             <thead>
-                                                <tr class="text-muted-foreground">
+                                                <tr class="text-foreground/60">
                                                     <th class="p-1.5 text-left">Product</th>
                                                     <th class="p-1.5 text-right">Price</th>
                                                     <th class="p-1.5 text-right">Qty</th>
@@ -222,15 +222,15 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(item, idx) in t.items" :key="idx" class="border-t border-border/60">
-                                                    <td class="p-1.5">{{ item.product_name }}</td>
-                                                    <td class="p-1.5 text-right">{{ formatCurrency(item.price) }}</td>
-                                                    <td class="p-1.5 text-right">{{ item.quantity }}</td>
-                                                    <td class="p-1.5 text-right">{{ formatCurrency(item.subtotal) }}</td>
+                                                    <td class="p-1.5 text-foreground">{{ item.product_name }}</td>
+                                                    <td class="p-1.5 text-right text-foreground">{{ formatCurrency(item.price) }}</td>
+                                                    <td class="p-1.5 text-right text-foreground">{{ item.quantity }}</td>
+                                                    <td class="p-1.5 text-right text-foreground">{{ formatCurrency(item.subtotal) }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
 
-                                        <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                                        <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-foreground/60">
                                             <span v-if="t.order_number">
                                                 Order: <span class="font-medium text-foreground">#{{ String(t.order_number).padStart(3, '0') }}</span>
                                             </span>
@@ -257,7 +257,7 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                                         <div>
                                             <button
                                                 type="button"
-                                                class="rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                                                class="rounded-md border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
                                                 @click.stop="handlePrintReceipt(t)"
                                             >
                                                 Print Receipt
@@ -281,7 +281,7 @@ async function handlePrintReceipt(transaction: HistoryTransaction) {
                         v-html="link.label"
                         @click="goToPage(link.url)"
                     />
-                    <span v-else class="rounded-md px-3 py-1.5 text-sm text-muted-foreground/50" v-html="link.label" />
+                    <span v-else class="rounded-md px-3 py-1.5 text-sm text-foreground/40" v-html="link.label" />
                 </template>
             </div>
         </div>

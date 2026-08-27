@@ -218,7 +218,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'inventory/cookies/{product}/stock',
             [CookieController::class, 'adjustStock']
         )
-            ->middleware('role:admin')
+            ->middleware('role:admin,manager')
             ->name('inventory.cookies.adjust-stock');
 
         // ====================================================

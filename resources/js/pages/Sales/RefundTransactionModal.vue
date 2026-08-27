@@ -91,30 +91,30 @@ function close() {
     <div v-if="open && transaction" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-md rounded-lg border bg-background p-5 shadow-lg">
             <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-lg font-semibold">{{ isAdmin ? 'Refund Transaction' : 'Request Transaction Refund' }}</h2>
-                <button type="button" class="text-muted-foreground hover:text-foreground" @click="close">
+                <h2 class="text-lg font-semibold text-foreground">{{ isAdmin ? 'Refund Transaction' : 'Request Transaction Refund' }}</h2>
+                <button type="button" class="text-foreground/60 hover:text-foreground" @click="close">
                     <X class="h-5 w-5" />
                 </button>
             </div>
 
             <div class="mb-4 space-y-1 rounded-md border bg-muted/30 p-3 text-sm">
                 <p>
-                    <span class="text-muted-foreground">Original Transaction:</span>
-                    <span class="ml-1 font-mono font-medium">{{ transaction.transaction_no ?? `#${transaction.id}` }}</span>
+                    <span class="text-foreground/70">Original Transaction:</span>
+                    <span class="ml-1 font-mono font-medium text-foreground">{{ transaction.transaction_no ?? `#${transaction.id}` }}</span>
                 </p>
                 <p>
-                    <span class="text-muted-foreground">Date &amp; Time:</span>
-                    <span class="ml-1 font-medium">{{ formatDateTime(transaction.created_at) }}</span>
+                    <span class="text-foreground/70">Date & Time:</span>
+                    <span class="ml-1 font-medium text-foreground">{{ formatDateTime(transaction.created_at) }}</span>
                 </p>
                 <p>
-                    <span class="text-muted-foreground">Original Total:</span>
-                    <span class="ml-1 font-medium">{{ formatCurrency(transaction.total) }}</span>
+                    <span class="text-foreground/70">Original Total:</span>
+                    <span class="ml-1 font-medium text-foreground">{{ formatCurrency(transaction.total) }}</span>
                 </p>
             </div>
 
             <form class="space-y-4" @submit.prevent="submit">
                 <div>
-                    <label class="mb-1 block text-sm font-medium">Refund Amount</label>
+                    <label class="mb-1 block text-sm font-medium text-foreground">Refund Amount</label>
                     <input
                         v-model="form.refund_amount"
                         type="number"
@@ -128,7 +128,7 @@ function close() {
                 </div>
 
                 <div>
-                    <label class="mb-1 block text-sm font-medium">Refund Reason</label>
+                    <label class="mb-1 block text-sm font-medium text-foreground">Refund Reason</label>
                     <textarea
                         v-model="form.refund_reason"
                         rows="3"
@@ -139,12 +139,12 @@ function close() {
                     <p v-if="form.errors.refund_reason" class="mt-1 text-xs text-red-600">{{ form.errors.refund_reason }}</p>
                 </div>
 
-                <p class="text-xs text-muted-foreground">
-                    Processed By and Date &amp; Time are recorded automatically on submit.
+                <p class="text-xs text-foreground/60">
+                    Processed By and Date & Time are recorded automatically on submit.
                 </p>
 
                 <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" class="rounded-md border px-4 py-2 text-sm hover:bg-muted" @click="close">
+                    <button type="button" class="rounded-md border px-4 py-2 text-sm text-foreground hover:bg-muted" @click="close">
                         Cancel
                     </button>
                     <button

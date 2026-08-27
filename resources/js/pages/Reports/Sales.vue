@@ -131,8 +131,8 @@ function exportWord() {
         <div class="space-y-6 p-3 sm:p-4 print:p-0">
             <div class="flex flex-col gap-4 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold">Sales Report</h1>
-                    <p class="text-sm text-muted-foreground">Monitor sales by day, month, or year</p>
+                    <h1 class="text-2xl font-semibold text-foreground">Sales Report</h1>
+                    <p class="text-sm text-foreground/60">Monitor sales by day, month, or year</p>
                 </div>
 
                 <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
@@ -149,7 +149,7 @@ function exportWord() {
                     <div ref="exportMenuRef" class="relative">
                         <button
                             @click="toggleExportMenu"
-                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
+                            class="flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm text-foreground hover:bg-muted"
                         >
                             <FileSpreadsheet class="h-4 w-4" />
                             Export File
@@ -162,14 +162,14 @@ function exportWord() {
                         >
                             <button
                                 @click="exportExcel"
-                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                             >
                                 <FileSpreadsheet class="h-4 w-4" />
                                 Export as Excel
                             </button>
                             <button
                                 @click="exportWord"
-                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
                             >
                                 <FileText class="h-4 w-4" />
                                 Export as Word
@@ -188,70 +188,70 @@ function exportWord() {
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Total Sales</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.total_sales) }}</p>
+                    <p class="text-xs text-foreground/60">Total Sales</p>
+                    <p class="text-xl font-semibold text-foreground">{{ formatCurrency(summary.total_sales) }}</p>
                 </div>
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Transactions</p>
-                    <p class="text-xl font-semibold">{{ summary.transaction_count }}</p>
+                    <p class="text-xs text-foreground/60">Transactions</p>
+                    <p class="text-xl font-semibold text-foreground">{{ summary.transaction_count }}</p>
                 </div>
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Items Sold</p>
-                    <p class="text-xl font-semibold">{{ summary.items_sold }}</p>
+                    <p class="text-xs text-foreground/60">Items Sold</p>
+                    <p class="text-xl font-semibold text-foreground">{{ summary.items_sold }}</p>
                 </div>
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Average Sale</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.average_sale) }}</p>
+                    <p class="text-xs text-foreground/60">Average Sale</p>
+                    <p class="text-xl font-semibold text-foreground">{{ formatCurrency(summary.average_sale) }}</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Total COGS</p>
-                    <p class="text-xl font-semibold">{{ formatCurrency(summary.total_cogs) }}</p>
+                    <p class="text-xs text-foreground/60">Total COGS</p>
+                    <p class="text-xl font-semibold text-foreground">{{ formatCurrency(summary.total_cogs) }}</p>
                 </div>
                 <div class="rounded-lg border p-4 border-green-200 bg-green-50/50">
-                    <p class="text-xs text-muted-foreground">Gross Profit</p>
+                    <p class="text-xs text-foreground/60">Gross Profit</p>
                     <p class="text-xl font-semibold text-green-700">{{ formatCurrency(summary.gross_profit) }}</p>
                     <p v-if="hasIncompleteCost" class="mt-1 text-[11px] text-amber-600 print:hidden">
                         Some items are missing ingredient cost data — figure may be understated.
                     </p>
                 </div>
                 <div class="rounded-lg border p-4">
-                    <p class="text-xs text-muted-foreground">Gross Margin</p>
-                    <p class="text-xl font-semibold">{{ formatPercent(summary.gross_margin) }}</p>
+                    <p class="text-xs text-foreground/60">Gross Margin</p>
+                    <p class="text-xl font-semibold text-foreground">{{ formatPercent(summary.gross_margin) }}</p>
                 </div>
             </div>
 
             <!-- Payment Summary -->
             <div class="overflow-x-auto rounded-lg border">
                 <div class="border-b p-4">
-                    <h2 class="font-semibold">Payment Summary</h2>
+                    <h2 class="font-semibold text-foreground">Payment Summary</h2>
                 </div>
                 <table class="w-full min-w-[480px] text-sm">
                     <thead class="bg-muted/50">
                         <tr>
-                            <th class="p-2 text-left">Payment Method</th>
-                            <th class="p-2 text-right">Transactions</th>
-                            <th class="p-2 text-right">Total Sales</th>
-                            <th class="p-2 text-right">Percentage</th>
+                            <th class="p-2 text-left text-foreground/70">Payment Method</th>
+                            <th class="p-2 text-right text-foreground/70">Transactions</th>
+                            <th class="p-2 text-right text-foreground/70">Total Sales</th>
+                            <th class="p-2 text-right text-foreground/70">Percentage</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="p in salesByPaymentMethod" :key="p.method" class="border-t">
-                            <td class="p-2">{{ p.label }}</td>
-                            <td class="p-2 text-right">{{ p.transactions }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(p.total_sales) }}</td>
-                            <td class="p-2 text-right">{{ formatPercent(p.percentage) }}</td>
+                            <td class="p-2 text-foreground">{{ p.label }}</td>
+                            <td class="p-2 text-right text-foreground">{{ p.transactions }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(p.total_sales) }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatPercent(p.percentage) }}</td>
                         </tr>
                         <tr v-if="!salesByPaymentMethod.length">
-                            <td colspan="4" class="p-4 text-center text-muted-foreground">No sales in this period</td>
+                            <td colspan="4" class="p-4 text-center text-foreground/60">No sales in this period</td>
                         </tr>
                         <tr v-else class="border-t bg-muted/30 font-medium">
-                            <td class="p-2">Total</td>
-                            <td class="p-2 text-right">{{ paymentTotals.transactions }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(paymentTotals.total_sales) }}</td>
-                            <td class="p-2 text-right">100.00%</td>
+                            <td class="p-2 text-foreground">Total</td>
+                            <td class="p-2 text-right text-foreground">{{ paymentTotals.transactions }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(paymentTotals.total_sales) }}</td>
+                            <td class="p-2 text-right text-foreground">100.00%</td>
                         </tr>
                     </tbody>
                 </table>
@@ -260,32 +260,32 @@ function exportWord() {
             <!-- Order Type Summary -->
             <div class="overflow-x-auto rounded-lg border">
                 <div class="border-b p-4">
-                    <h2 class="font-semibold">Order Type Summary</h2>
+                    <h2 class="font-semibold text-foreground">Order Type Summary</h2>
                 </div>
                 <table class="w-full min-w-[480px] text-sm">
                     <thead class="bg-muted/50">
                         <tr>
-                            <th class="p-2 text-left">Order Type</th>
-                            <th class="p-2 text-right">Transactions</th>
-                            <th class="p-2 text-right">Items Sold</th>
-                            <th class="p-2 text-right">Total Sales</th>
+                            <th class="p-2 text-left text-foreground/70">Order Type</th>
+                            <th class="p-2 text-right text-foreground/70">Transactions</th>
+                            <th class="p-2 text-right text-foreground/70">Items Sold</th>
+                            <th class="p-2 text-right text-foreground/70">Total Sales</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="o in orderTypeSummary" :key="o.order_type" class="border-t">
-                            <td class="p-2">{{ o.label }}</td>
-                            <td class="p-2 text-right">{{ o.transactions }}</td>
-                            <td class="p-2 text-right">{{ o.items_sold }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(o.total_sales) }}</td>
+                            <td class="p-2 text-foreground">{{ o.label }}</td>
+                            <td class="p-2 text-right text-foreground">{{ o.transactions }}</td>
+                            <td class="p-2 text-right text-foreground">{{ o.items_sold }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(o.total_sales) }}</td>
                         </tr>
                         <tr v-if="!orderTypeSummary.length">
-                            <td colspan="4" class="p-4 text-center text-muted-foreground">No sales in this period</td>
+                            <td colspan="4" class="p-4 text-center text-foreground/60">No sales in this period</td>
                         </tr>
                         <tr v-else class="border-t bg-muted/30 font-medium">
-                            <td class="p-2">Total</td>
-                            <td class="p-2 text-right">{{ orderTypeTotals.transactions }}</td>
-                            <td class="p-2 text-right">{{ orderTypeTotals.items_sold }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(orderTypeTotals.total_sales) }}</td>
+                            <td class="p-2 text-foreground">Total</td>
+                            <td class="p-2 text-right text-foreground">{{ orderTypeTotals.transactions }}</td>
+                            <td class="p-2 text-right text-foreground">{{ orderTypeTotals.items_sold }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(orderTypeTotals.total_sales) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -293,22 +293,22 @@ function exportWord() {
 
             <div class="overflow-x-auto rounded-lg border">
                 <div class="border-b p-4">
-                    <h2 class="font-semibold">Best Selling Items</h2>
+                    <h2 class="font-semibold text-foreground">Best Selling Items</h2>
                 </div>
                 <table class="w-full min-w-[640px] text-sm">
                     <thead class="bg-muted/50">
                         <tr>
-                            <th class="p-2 text-left">Product</th>
-                            <th class="p-2 text-right">Qty Sold</th>
-                            <th class="p-2 text-right">Revenue</th>
-                            <th class="p-2 text-right">COGS</th>
-                            <th class="p-2 text-right">Gross Profit</th>
-                            <th class="p-2 text-right">Margin</th>
+                            <th class="p-2 text-left text-foreground/70">Product</th>
+                            <th class="p-2 text-right text-foreground/70">Qty Sold</th>
+                            <th class="p-2 text-right text-foreground/70">Revenue</th>
+                            <th class="p-2 text-right text-foreground/70">COGS</th>
+                            <th class="p-2 text-right text-foreground/70">Gross Profit</th>
+                            <th class="p-2 text-right text-foreground/70">Margin</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="item in bestSellers" :key="item.name" class="border-t">
-                            <td class="p-2">
+                            <td class="p-2 text-foreground">
                                 {{ item.name }}
                                 <span
                                     v-if="item.has_incomplete_cost"
@@ -318,14 +318,14 @@ function exportWord() {
                                     ⚠
                                 </span>
                             </td>
-                            <td class="p-2 text-right">{{ item.quantity }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(item.total) }}</td>
-                            <td class="p-2 text-right">{{ formatCurrency(item.cogs) }}</td>
+                            <td class="p-2 text-right text-foreground">{{ item.quantity }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(item.total) }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatCurrency(item.cogs) }}</td>
                             <td class="p-2 text-right font-medium text-green-700">{{ formatCurrency(item.gross_profit) }}</td>
-                            <td class="p-2 text-right">{{ formatPercent(item.margin) }}</td>
+                            <td class="p-2 text-right text-foreground">{{ formatPercent(item.margin) }}</td>
                         </tr>
                         <tr v-if="!bestSellers.length">
-                            <td colspan="6" class="p-4 text-center text-muted-foreground">No sales in this period</td>
+                            <td colspan="6" class="p-4 text-center text-foreground/60">No sales in this period</td>
                         </tr>
                     </tbody>
                 </table>

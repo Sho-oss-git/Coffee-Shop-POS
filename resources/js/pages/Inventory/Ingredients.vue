@@ -61,7 +61,7 @@ const props = defineProps<{
     ingredients: Ingredient[];
     filters: { search?: string };
 }>();
-const { isAdmin } = usePermissions();
+const { isAdmin, canManageInventory } = usePermissions();
 
 const page = usePage<{ flash?: { success?: string; error?: string } }>();
 
@@ -115,7 +115,7 @@ function formatCurrency(value: number | null): string {
 // unit_cost is stored as a whole peso amount (no cents), so it's formatted
 // without decimals — total_value is a computed total and keeps formatCurrency's decimals.
 function formatWholePeso(value: number): string {
-    return `₱${value.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
+    return `₱${Number(value).toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 }
 
 const statusStyles: Record<Ingredient['status'], string> = {
@@ -289,6 +289,45 @@ function deleteIngredient() {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Manager delete request (sent to Admin for approval)                    */
+/* ---------------------------------------------------------------------- */
+
+const requestTarget = ref<Ingredient | null>(null);
+const requestForm = useForm({
+    type: 'ingredient_deletion',
+    reason: '',
+    target_type: 'ingredient',
+    target_id: 0,
+});
+
+function onDeleteClick(ingredient: Ingredient) {
+    // Admins delete immediately; managers must request Admin approval.
+    if (isAdmin.value) {
+        deleteTarget.value = ingredient;
+    } else {
+        requestTarget.value = ingredient;
+    }
+}
+
+function closeRequest() {
+    requestTarget.value = null;
+    requestForm.reset();
+    requestForm.clearErrors();
+}
+
+function submitDeleteRequest() {
+    if (!requestTarget.value) return;
+    requestForm.target_id = requestTarget.value.id;
+    if (!requestForm.reason) {
+        requestForm.reason = `Request deletion of ingredient "${requestTarget.value.name}".`;
+    }
+    requestForm.post(route('action-requests.store'), {
+        preserveScroll: true,
+        onSuccess: () => closeRequest(),
+    });
+}
+
+/* ---------------------------------------------------------------------- */
 /* Batches panel                                                          */
 /* ---------------------------------------------------------------------- */
 
@@ -386,8 +425,8 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
             <!-- Header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h1 class="text-xl font-semibold">Ingredients</h1>
-                    <p class="text-sm text-muted-foreground">Stock is tracked in each ingredient's own display unit.</p>
+                    <h1 class="text-xl font-semibold text-foreground">Ingredients</h1>
+                    <p class="text-sm text-foreground/60">Stock is tracked in each ingredient's own display unit.</p>
                 </div>
                 <Button @click="openAddDialog">
                     <Plus class="mr-2 h-4 w-4" />
@@ -399,11 +438,11 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div class="flex items-center gap-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <Boxes class="h-5 w-5 text-muted-foreground" />
+                        <Boxes class="h-5 w-5 text-foreground/60" />
                     </div>
                     <div>
-                        <p class="text-lg font-semibold leading-none">{{ stats.total }}</p>
-                        <p class="text-xs text-muted-foreground">Ingredients tracked</p>
+                        <p class="text-lg font-semibold leading-none text-foreground">{{ stats.total }}</p>
+                        <p class="text-xs text-foreground/60">Ingredients tracked</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
@@ -411,8 +450,8 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                         <AlertTriangle class="h-5 w-5 text-amber-600 dark:text-amber-500" />
                     </div>
                     <div>
-                        <p class="text-lg font-semibold leading-none">{{ stats.lowStock }}</p>
-                        <p class="text-xs text-muted-foreground">Low stock</p>
+                        <p class="text-lg font-semibold leading-none text-foreground">{{ stats.lowStock }}</p>
+                        <p class="text-xs text-foreground/60">Low stock</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
@@ -420,8 +459,8 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                         <PackageX class="h-5 w-5 text-destructive" />
                     </div>
                     <div>
-                        <p class="text-lg font-semibold leading-none">{{ stats.outOfStock }}</p>
-                        <p class="text-xs text-muted-foreground">Out of stock</p>
+                        <p class="text-lg font-semibold leading-none text-foreground">{{ stats.outOfStock }}</p>
+                        <p class="text-xs text-foreground/60">Out of stock</p>
                     </div>
                 </div>
             </div>
@@ -429,7 +468,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
             <!-- Search + type filter -->
             <div class="flex flex-wrap items-center gap-3">
                 <div class="relative w-full max-w-xs">
-                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" />
                     <Input v-model="search" type="text" placeholder="Search ingredients..." class="pl-9" />
                 </div>
 
@@ -437,7 +476,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <button
                         type="button"
                         class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
-                        :class="typeFilter === '' ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-muted/70'"
+                        :class="typeFilter === '' ? 'bg-foreground text-background' : 'bg-muted text-foreground/60 hover:bg-muted/70'"
                         @click="typeFilter = ''"
                     >
                         All
@@ -447,7 +486,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                         :key="type"
                         type="button"
                         class="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
-                        :class="typeFilter === type ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-muted/70'"
+                        :class="typeFilter === type ? 'bg-foreground text-background' : 'bg-muted text-foreground/60 hover:bg-muted/70'"
                         @click="typeFilter = type"
                     >
                         {{ TYPE_LABELS[type] }}
@@ -464,14 +503,14 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <table class="w-full text-sm">
                         <thead class="border-b border-sidebar-border/70 bg-muted/40 dark:border-sidebar-border">
                             <tr>
-                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Ingredient</th>
-                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Stock</th>
-                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Min. Stock</th>
-                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Cost / Value</th>
-                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Expiry</th>
-                                <th class="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                                <th class="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+                                <th class="px-4 py-3 text-left font-medium text-foreground/70">Ingredient</th>
+                                <th class="px-4 py-3 text-left font-medium text-foreground/70">Type</th>
+                                <th class="px-4 py-3 text-right font-medium text-foreground/70">Stock</th>
+                                <th class="px-4 py-3 text-right font-medium text-foreground/70">Min. Stock</th>
+                                <th class="px-4 py-3 text-right font-medium text-foreground/70">Cost / Value</th>
+                                <th class="px-4 py-3 text-left font-medium text-foreground/70">Expiry</th>
+                                <th class="px-4 py-3 text-left font-medium text-foreground/70">Status</th>
+                                <th class="px-4 py-3 text-right font-medium text-foreground/70">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -489,28 +528,28 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                                         >
                                             <component :is="TYPE_ICON[ingredient.measurement_type]" class="h-4 w-4" />
                                         </div>
-                                        <span class="font-medium">{{ ingredient.name }}</span>
+                                        <span class="font-medium text-foreground">{{ ingredient.name }}</span>
                                     </div>
                                 </td>
 
                                 <!-- Type -->
-                                <td class="px-4 py-3 text-muted-foreground">
+                                <td class="px-4 py-3 text-foreground/60">
                                     {{ TYPE_LABELS[ingredient.measurement_type] }}
                                 </td>
 
                                 <!-- Stock -->
-                                <td class="px-4 py-3 text-right font-medium">
+                                <td class="px-4 py-3 text-right font-medium text-foreground">
                                     {{ formatStock(ingredient.total_stock, ingredient.measurement_type) }}
                                     {{ displayUnit(ingredient.unit) }}
                                 </td>
 
                                 <!-- Minimum stock -->
-                                <td class="px-4 py-3 text-right text-muted-foreground">
+                                <td class="px-4 py-3 text-right text-foreground/60">
                                     {{ formatStock(Number(ingredient.minimum_stock), ingredient.measurement_type) }}{{ displayUnit(ingredient.unit) }}
                                 </td>
 
                                 <!-- Cost / value -->
-                                <td class="px-4 py-3 text-right text-muted-foreground">
+                                <td class="px-4 py-3 text-right text-foreground/60">
                                     <template v-if="ingredient.unit_cost">
                                         {{ formatWholePeso(ingredient.unit_cost) }}/{{ displayUnit(ingredient.unit) }}
                                         <br />
@@ -523,12 +562,12 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                                 <td class="px-4 py-3">
                                     <span
                                         v-if="ingredient.nearest_expiry"
-                                        class="flex items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+                                        class="flex items-center gap-1 whitespace-nowrap text-xs text-foreground/60"
                                     >
                                         <AlertTriangle v-if="ingredient.status !== 'out_of_stock'" class="h-3.5 w-3.5" />
                                         {{ ingredient.nearest_expiry }}
                                     </span>
-                                    <span v-else class="text-xs text-muted-foreground">—</span>
+                                    <span v-else class="text-xs text-foreground/60">—</span>
                                 </td>
 
                                 <!-- Status -->
@@ -544,27 +583,29 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                                 <!-- Actions -->
                                 <td class="px-4 py-3">
                                     <div class="flex justify-end gap-1.5">
-                                        <Button variant="outline" size="icon" title="View batches" @click="openBatches(ingredient)">
+                                        <Button variant="outline" size="icon" title="View batches" @click="openBatches(ingredient)" class="text-foreground/60 hover:text-foreground">
                                             <Layers class="h-4 w-4" />
                                         </Button>
                                         <Button
-                                            v-if="isAdmin"
+                                            v-if="canManageInventory"
                                             variant="outline"
                                             size="icon"
                                             title="Restock"
                                             @click="openRestock(ingredient)"
+                                            class="text-foreground/60 hover:text-foreground"
                                         >
                                             <Plus class="h-4 w-4" />
                                         </Button>
-                                        <Button variant="outline" size="icon" title="Edit" @click="openEditDialog(ingredient)">
+                                        <Button variant="outline" size="icon" title="Edit" @click="openEditDialog(ingredient)" class="text-foreground/60 hover:text-foreground">
                                             <Pencil class="h-4 w-4" />
                                         </Button>
                                         <Button
-                                            v-if="isAdmin"
+                                            v-if="canManageInventory"
                                             variant="outline"
                                             size="icon"
                                             title="Delete"
-                                            @click="deleteTarget = ingredient"
+                                            @click="onDeleteClick(ingredient)"
+                                            class="text-foreground/60 hover:text-foreground"
                                         >
                                             <Trash2 class="h-4 w-4" />
                                         </Button>
@@ -579,7 +620,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
             <!-- Empty State -->
             <div
                 v-else
-                class="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border/70 text-center text-muted-foreground dark:border-sidebar-border"
+                class="flex min-h-[250px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-sidebar-border/70 text-center text-foreground/60 dark:border-sidebar-border"
             >
                 <p>No ingredients match. Add your first ingredient to get started.</p>
                 <Button size="sm" @click="openAddDialog">
@@ -617,7 +658,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                             <option value="volume">Volume (L / ml)</option>
                             <option value="piece">Piece (pcs)</option>
                         </select>
-                        <p v-if="editingHasBatches" class="text-xs text-muted-foreground">
+                        <p v-if="editingHasBatches" class="text-xs text-foreground/60">
                             Locked — this ingredient already has stock batches.
                         </p>
                         <p v-if="form.errors.measurement_type" class="text-sm text-destructive">{{ form.errors.measurement_type }}</p>
@@ -636,7 +677,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                                 {{ displayUnit(u) }}
                             </option>
                         </select>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-xs text-foreground/60">
                             This is how stock is stored and shown — it does not need to match recipe units.
                         </p>
                         <p v-if="form.errors.unit" class="text-sm text-destructive">{{ form.errors.unit }}</p>
@@ -647,7 +688,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                         <Label for="ing-min">Minimum Stock / Reorder Level</Label>
                         <div class="flex items-center gap-2">
                             <Input id="ing-min" v-model="form.minimum_stock" type="number" step="0.01" min="0" class="flex-1" />
-                            <span class="w-10 shrink-0 text-sm text-muted-foreground">{{ displayUnit(form.unit) }}</span>
+                            <span class="w-10 shrink-0 text-sm text-foreground/60">{{ displayUnit(form.unit) }}</span>
                         </div>
                         <p v-if="form.errors.minimum_stock" class="text-sm text-destructive">{{ form.errors.minimum_stock }}</p>
                     </div>
@@ -656,10 +697,10 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <div class="space-y-2">
                         <Label for="ing-cost">Cost per {{ displayUnit(form.unit) }} (optional)</Label>
                         <div class="flex items-center gap-2">
-                            <span class="shrink-0 text-sm text-muted-foreground">₱</span>
+                            <span class="shrink-0 text-sm text-foreground/60">₱</span>
                             <Input id="ing-cost" v-model="form.unit_cost" type="number" step="1" min="0" placeholder="0" class="flex-1" />
                         </div>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-xs text-foreground/60">
                             Whole pesos only. Used to compute this ingredient's stock value on the Inventory Report. Leave blank if you don't track cost.
                         </p>
                         <p v-if="form.errors.unit_cost" class="text-sm text-destructive">{{ form.errors.unit_cost }}</p>
@@ -668,13 +709,13 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <!-- Initial Stock (create only) -->
                     <div v-if="!isEditing" class="space-y-2 rounded-md border border-input p-3">
                         <Label for="ing-qty">Initial Stock (optional)</Label>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-xs text-foreground/60">
                             Leave blank to add this ingredient with zero stock and restock later.
                         </p>
 
                         <div class="flex items-center gap-2">
                             <Input id="ing-qty" v-model="form.quantity" type="number" step="0.01" min="0" placeholder="0" class="flex-1" />
-                            <span class="w-10 shrink-0 text-sm text-muted-foreground">{{ displayUnit(form.unit) }}</span>
+                            <span class="w-10 shrink-0 text-sm text-foreground/60">{{ displayUnit(form.unit) }}</span>
                         </div>
                         <p v-if="form.errors.quantity" class="text-sm text-destructive">{{ form.errors.quantity }}</p>
 
@@ -710,30 +751,30 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                 </DialogHeader>
 
                 <div v-if="isLoadingBatches" class="flex justify-center py-8">
-                    <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
+                    <Loader2 class="h-5 w-5 animate-spin text-foreground/60" />
                 </div>
 
                 <div v-else class="max-h-96 space-y-2 overflow-auto">
                     <div v-for="batch in batches" :key="batch.id" class="rounded-md border p-3 text-sm">
                         <div class="flex items-center justify-between">
-                            <span class="font-medium">Batch #{{ batch.id }}</span>
+                            <span class="font-medium text-foreground">Batch #{{ batch.id }}</span>
                             <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="batchStatusStyles[batch.status]">
                                 {{ batch.status.replace('_', ' ') }}
                             </span>
                         </div>
-                        <p class="mt-1 text-muted-foreground">
+                        <p class="mt-1 text-foreground/60">
                             Quantity: {{ formatStock(Number(batch.quantity), batchesTarget!.measurement_type) }}{{ displayUnit(batch.unit) }} · Remaining:
                             {{ formatStock(Number(batch.remaining_quantity), batchesTarget!.measurement_type) }}{{ displayUnit(batch.unit) }}
                         </p>
-                        <p class="text-muted-foreground">
+                        <p class="text-foreground/60">
                             Received: {{ batch.received_date }}
                             <span v-if="batch.expiry_date"> · Expires: {{ batch.expiry_date }}</span>
                         </p>
-                        <p v-if="batch.total_cost !== null" class="text-muted-foreground">
+                        <p v-if="batch.total_cost !== null" class="text-foreground/60">
                             Cost: {{ formatWholePeso(batch.total_cost) }}
                         </p>
                     </div>
-                    <p v-if="batches.length === 0" class="py-6 text-center text-muted-foreground">No batches yet.</p>
+                    <p v-if="batches.length === 0" class="py-6 text-center text-foreground/60">No batches yet.</p>
                 </div>
             </DialogContent>
         </Dialog>
@@ -761,7 +802,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                             >
                                 <option v-for="u in restockUnitOptions" :key="u" :value="u">{{ displayUnit(u) }}</option>
                             </select>
-                            <p class="text-xs text-muted-foreground">Only units compatible with this ingredient are shown.</p>
+                            <p class="text-xs text-foreground/60">Only units compatible with this ingredient are shown.</p>
                         </div>
                     </div>
 
@@ -779,10 +820,10 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <div class="space-y-2">
                         <Label for="rs-cost">Total Cost (optional)</Label>
                         <div class="flex items-center gap-2">
-                            <span class="shrink-0 text-sm text-muted-foreground">₱</span>
+                            <span class="shrink-0 text-sm text-foreground/60">₱</span>
                             <Input id="rs-cost" v-model="restockForm.total_cost" type="number" step="1" min="0" placeholder="0" class="flex-1" />
                         </div>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="text-xs text-foreground/60">
                             How much you paid for this whole delivery, in whole pesos. Shown on the Restock History.
                         </p>
                         <p v-if="restockForm.errors.total_cost" class="text-sm text-destructive">{{ restockForm.errors.total_cost }}</p>
@@ -805,7 +846,7 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                 <DialogHeader>
                     <DialogTitle>Delete Ingredient</DialogTitle>
                 </DialogHeader>
-                <p class="text-sm text-muted-foreground">
+                <p class="text-sm text-foreground/60">
                     Are you sure you want to delete "{{ deleteTarget?.name }}"? This cannot be undone.
                 </p>
                 <DialogFooter>
@@ -813,6 +854,36 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                     <Button variant="destructive" :disabled="isDeleting" @click="deleteIngredient">
                         <Loader2 v-if="isDeleting" class="mr-2 h-4 w-4 animate-spin" />
                         Delete
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Manager: Request Deletion (Admin approval) -->
+        <Dialog :open="!!requestTarget" @update:open="(val) => !val && closeRequest()">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Request Ingredient Deletion</DialogTitle>
+                </DialogHeader>
+                <p class="text-sm text-foreground/70">
+                    Submit a deletion request for "{{ requestTarget?.name }}" to an Admin for approval?
+                </p>
+                <div class="space-y-2">
+                    <Label for="del-reason">Reason (optional)</Label>
+                    <textarea
+                        id="del-reason"
+                        v-model="requestForm.reason"
+                        rows="3"
+                        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        placeholder="Why should this ingredient be deleted?"
+                    ></textarea>
+                    <p v-if="requestForm.errors.reason" class="text-sm text-destructive">{{ requestForm.errors.reason }}</p>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" @click="closeRequest">Cancel</Button>
+                    <Button variant="destructive" :disabled="requestForm.processing" @click="submitDeleteRequest">
+                        <Loader2 v-if="requestForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Send Request
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -120,7 +120,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
                 <Plus class="h-4 w-4" />
             </Button>
         </div>
-        <p v-if="categories.length === 0" class="text-sm text-muted-foreground">
+        <p v-if="categories.length === 0" class="text-sm text-foreground/60">
             No categories yet — click the + button to add one.
         </p>
         <p v-if="form.errors.category" class="text-sm text-destructive">{{ form.errors.category }}</p>
@@ -135,7 +135,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
     <div class="flex items-center justify-between rounded-md border border-input px-3 py-2">
         <div>
             <Label>Availability</Label>
-            <p class="text-xs text-muted-foreground">Unavailable products stay listed but can't be sold.</p>
+            <p class="text-xs text-foreground/60">Unavailable products stay listed but can't be sold.</p>
         </div>
         <button
             type="button"
@@ -177,7 +177,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
         <div class="space-y-2">
             <Label for="cost-price">Cost Price (per piece)</Label>
             <Input id="cost-price" v-model="form.cost_price" type="number" step="0.01" min="0" placeholder="0.00" />
-            <p class="text-xs text-muted-foreground">
+            <p class="text-xs text-foreground/60">
                 Manual cost since finished-stock products have no recipe to calculate it from.
             </p>
             <p v-if="form.errors.cost_price" class="text-sm text-destructive">{{ form.errors.cost_price }}</p>
@@ -186,7 +186,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
 
     <div v-if="form.tracking_type === 'recipe'" class="space-y-2">
         <Label>Ingredients / Recipe</Label>
-        <p class="text-xs text-muted-foreground">
+        <p class="text-xs text-foreground/60">
             Enter the amount needed for ONE product. This can be a different unit than how the
             ingredient is stocked — e.g. stocked in kg, recipe in g.
         </p>
@@ -218,7 +218,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
             </Button>
         </div>
 
-        <p v-if="form.ingredients.length === 0" class="text-sm text-muted-foreground">No ingredients added yet.</p>
+        <p v-if="form.ingredients.length === 0" class="text-sm text-foreground/60">No ingredients added yet.</p>
 
         <Button
             type="button"
@@ -231,7 +231,7 @@ const canAddIngredient = computed(() => usedIngredientIds.value.size < props.ing
             Add Ingredient
         </Button>
 
-        <p v-if="ingredients.length === 0" class="text-sm text-muted-foreground">
+        <p v-if="ingredients.length === 0" class="text-sm text-foreground/60">
             No ingredients exist yet. Add ingredients from the Inventory page first.
         </p>
         <p v-if="form.errors.ingredients" class="text-sm text-destructive">{{ form.errors.ingredients }}</p>

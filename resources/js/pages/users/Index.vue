@@ -129,8 +129,8 @@ async function viewRecords(employee: EmployeeRow) {
         <div class="flex min-w-0 flex-col gap-6 p-3 sm:p-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-2xl font-semibold">Employees</h1>
-                    <p class="text-sm text-muted-foreground">Manage employees, positions, and shift status.</p>
+                    <h1 class="text-2xl font-semibold text-foreground">Employees</h1>
+                    <p class="text-sm text-foreground/60">Manage employees, positions, and shift status.</p>
                 </div>
                 <Button type="button" class="w-full sm:w-auto" @click="router.visit('/user-management/create')">+ Add Employee</Button>
             </div>
@@ -138,10 +138,10 @@ async function viewRecords(employee: EmployeeRow) {
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <Card>
                     <CardContent class="flex items-center gap-3 p-4">
-                        <div class="rounded-full bg-muted p-2"><Users class="h-5 w-5 text-muted-foreground" /></div>
+                        <div class="rounded-full bg-muted p-2"><Users class="h-5 w-5 text-foreground/60" /></div>
                         <div>
-                            <p class="text-xs text-muted-foreground">Employees</p>
-                            <p class="text-xl font-semibold">{{ stats.total }}</p>
+                            <p class="text-xs text-foreground/60">Employees</p>
+                            <p class="text-xl font-semibold text-foreground">{{ stats.total }}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -149,8 +149,8 @@ async function viewRecords(employee: EmployeeRow) {
                     <CardContent class="flex items-center gap-3 p-4">
                         <div class="rounded-full bg-green-100 p-2 dark:bg-green-900/30"><CircleCheck class="h-5 w-5 text-green-600" /></div>
                         <div>
-                            <p class="text-xs text-muted-foreground">Working</p>
-                            <p class="text-xl font-semibold">{{ stats.working }}</p>
+                            <p class="text-xs text-foreground/60">Working</p>
+                            <p class="text-xl font-semibold text-foreground">{{ stats.working }}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -158,8 +158,8 @@ async function viewRecords(employee: EmployeeRow) {
                     <CardContent class="flex items-center gap-3 p-4">
                         <div class="rounded-full bg-amber-100 p-2 dark:bg-amber-900/30"><Clock class="h-5 w-5 text-amber-600" /></div>
                         <div>
-                            <p class="text-xs text-muted-foreground">On Break</p>
-                            <p class="text-xl font-semibold">{{ stats.on_break }}</p>
+                            <p class="text-xs text-foreground/60">On Break</p>
+                            <p class="text-xl font-semibold text-foreground">{{ stats.on_break }}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -167,16 +167,16 @@ async function viewRecords(employee: EmployeeRow) {
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div class="relative sm:max-w-xs sm:flex-1">
-                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/60" />
                     <Input v-model="search" placeholder="Search employee..." class="w-full pl-9" />
                 </div>
-                <select v-model="positionFilter" class="h-10 rounded-md border bg-background px-3 text-sm sm:w-44">
+                <select v-model="positionFilter" class="h-10 rounded-md border bg-background px-3 text-sm text-foreground sm:w-44">
                     <option value="all">All Positions</option>
                     <option value="barista">Barista</option>
                     <option value="cashier">Cashier</option>
                     <option value="supervisor">Supervisor</option>
                 </select>
-                <select v-model="statusFilter" class="h-10 rounded-md border bg-background px-3 text-sm sm:w-44">
+                <select v-model="statusFilter" class="h-10 rounded-md border bg-background px-3 text-sm text-foreground sm:w-44">
                     <option value="all">All Status</option>
                     <option value="working">Working</option>
                     <option value="break">On Break</option>
@@ -188,11 +188,11 @@ async function viewRecords(employee: EmployeeRow) {
                 <table class="w-full min-w-[680px] text-sm">
                     <thead>
                         <tr class="border-b bg-muted/40 text-left">
-                            <th class="p-3 font-medium">Employee</th>
-                            <th class="p-3 font-medium">Position</th>
-                            <th class="p-3 font-medium">Status</th>
-                            <th class="p-3 font-medium">Last Break</th>
-                            <th class="p-3 text-right font-medium">Action</th>
+                            <th class="p-3 font-medium text-foreground/70">Employee</th>
+                            <th class="p-3 font-medium text-foreground/70">Position</th>
+                            <th class="p-3 font-medium text-foreground/70">Status</th>
+                            <th class="p-3 font-medium text-foreground/70">Last Break</th>
+                            <th class="p-3 text-right font-medium text-foreground/70">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -203,12 +203,12 @@ async function viewRecords(employee: EmployeeRow) {
                                         {{ initials(employee.name) }}
                                     </div>
                                     <div>
-                                        <p class="font-medium leading-none">{{ employee.name }}</p>
-                                        <p class="mt-1 text-xs text-muted-foreground">{{ employee.email }}</p>
+                                        <p class="font-medium leading-none text-foreground">{{ employee.name }}</p>
+                                        <p class="mt-1 text-xs text-foreground/60">{{ employee.email }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="p-3 capitalize">{{ employee.position ?? employee.role }}</td>
+                            <td class="p-3 text-foreground capitalize">{{ employee.position ?? employee.role }}</td>
                             <td class="p-3">
                                 <span
                                     class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
@@ -221,7 +221,7 @@ async function viewRecords(employee: EmployeeRow) {
                                     {{ employee.status === 'working' ? 'Working' : employee.status === 'break' ? 'On Break' : 'Off Duty' }}
                                 </span>
                             </td>
-                            <td class="p-3 text-xs text-muted-foreground">
+                            <td class="p-3 text-xs text-foreground/60">
                                 <div class="flex items-center gap-2">
                                     <div>
                                         <template v-if="employee.break_started_at">
@@ -246,7 +246,7 @@ async function viewRecords(employee: EmployeeRow) {
                             <td class="p-3 text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child>
-                                        <Button variant="ghost" size="icon" type="button">
+                                        <Button variant="ghost" size="icon" type="button" class="text-foreground/60 hover:text-foreground">
                                             <MoreVertical class="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -260,7 +260,7 @@ async function viewRecords(employee: EmployeeRow) {
                             </td>
                         </tr>
                         <tr v-if="props.users.data.length === 0">
-                            <td colspan="5" class="p-8 text-center text-muted-foreground">No employees found.</td>
+                            <td colspan="5" class="p-8 text-center text-foreground/60">No employees found.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -271,13 +271,13 @@ async function viewRecords(employee: EmployeeRow) {
             <DialogContent class="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Activity Log</DialogTitle>
-                    <DialogDescription>{{ selectedEmployeeName }}'s login, break, and logout history.</DialogDescription>
+                    <DialogDescription class="text-foreground/60">{{ selectedEmployeeName }}'s login, break, and logout history.</DialogDescription>
                 </DialogHeader>
 
                 <div class="max-h-96 overflow-y-auto">
-                    <p v-if="loadingRecords" class="py-6 text-center text-sm text-muted-foreground">Loading records...</p>
+                    <p v-if="loadingRecords" class="py-6 text-center text-sm text-foreground/60">Loading records...</p>
 
-                    <p v-else-if="activityLogs.length === 0" class="py-6 text-center text-sm text-muted-foreground">
+                    <p v-else-if="activityLogs.length === 0" class="py-6 text-center text-sm text-foreground/60">
                         No activity recorded yet.
                     </p>
 
@@ -286,7 +286,7 @@ async function viewRecords(employee: EmployeeRow) {
                             <span class="font-medium" :class="actionColors[log.action]">
                                 {{ actionLabels[log.action] }}
                             </span>
-                            <span class="text-xs text-muted-foreground">{{ log.logged_at }}</span>
+                            <span class="text-xs text-foreground/60">{{ log.logged_at }}</span>
                         </li>
                     </ul>
                 </div>

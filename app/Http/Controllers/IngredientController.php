@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Ingredient;
 use App\Models\IngredientBatch;
 use App\Models\InventoryLog;
+use App\Models\Product;
 use App\Services\InventoryService;
 use App\Services\UnitConversionService;
 use Illuminate\Http\JsonResponse;
@@ -592,6 +593,7 @@ class IngredientController extends Controller
             ->with([
                 'ingredient:id,name,unit',
                 'ingredientBatch:id,received_date,expiry_date,total_cost',
+                'user:id,name',
             ])
             ->where('type', 'restock')
             ->whereNotNull('ingredient_id')
@@ -600,7 +602,7 @@ class IngredientController extends Controller
             ->get();
 
         $productRestockHistory = InventoryLog::query()
-            ->with('product:id,name')
+            ->with(['product:id,name', 'user:id,name'])
             ->whereNotNull('product_id')
             ->latest()
             ->limit(20)
@@ -621,13 +623,33 @@ class IngredientController extends Controller
             ])
             ->values();
 
+        // Finished products (pastry / finished stock) valued at their price.
+        $finishedStockValueItems = Product::query()
+            ->where('tracking_type', 'finished_stock')
+            ->where('stock_quantity', '>', 0)
+            ->get()
+            ->map(function (Product $product) {
+                $qty = (int) $product->stock_quantity;
+                $price = (float) $product->price;
+
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'stock_quantity' => $qty,
+                    'unit' => 'pcs',
+                    'price' => $product->price,
+                    'total_value' => round($qty * $price, 2),
+                ];
+            })
+            ->values();
+
+        $ingredientValue = $stockValueItems->sum('total_value');
+        $finishedValue = $finishedStockValueItems->sum('total_value');
+
         $totalStockValue =
-            $stockValueItems->isEmpty()
+            $stockValueItems->isEmpty() && $finishedStockValueItems->isEmpty()
                 ? null
-                : round(
-                    $stockValueItems->sum('total_value'),
-                    2
-                );
+                : round($ingredientValue + $finishedValue, 2);
 
         return Inertia::render(
             'Reports/Inventory',
@@ -702,13 +724,15 @@ class IngredientController extends Controller
                                 $log->ingredientBatch
                                     ?->expiry_date
                                     ?->toDateString(),
-                            'price' =>
-                                $log->ingredientBatch?->total_cost,
-                            'note' => $log->note,
-                            'created_at' =>
-                                $log->created_at
-                                    ->toDateTimeString(),
-                        ]
+                'price' =>
+                    $log->ingredientBatch?->total_cost,
+                'note' => $log->note,
+                'user_name' =>
+                    $log->user?->name ?? null,
+                'created_at' =>
+                    $log->created_at
+                        ->toDateTimeString(),
+            ]
                     ),
 
                 'productRestockHistory' =>
@@ -718,17 +742,21 @@ class IngredientController extends Controller
                             'product_name' =>
                                 $log->product?->name ?? '—',
                             'type' => $log->type,
-                            'quantity_change' =>
-                                (float) $log->quantity_change,
-                            'note' => $log->note,
-                            'created_at' =>
-                                $log->created_at
-                                    ->toDateTimeString(),
-                        ]
+                'quantity_change' =>
+                    (float) $log->quantity_change,
+                'note' => $log->note,
+                'user_name' =>
+                    $log->user?->name ?? null,
+                'created_at' =>
+                    $log->created_at
+                        ->toDateTimeString(),
+            ]
                     ),
 
                 'stockValueItems' =>
                     $stockValueItems,
+                'finishedStockValueItems' =>
+                    $finishedStockValueItems,
             ]
         );
     }

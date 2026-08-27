@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ReviewActionRequestRequest;
 use App\Http\Requests\StoreActionRequestRequest;
 use App\Models\ActionRequest;
+use App\Models\Ingredient;
 use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class ActionRequestController extends Controller
                 'type' => $actionRequest->type,
                 'target_type' => $actionRequest->target_type,
                 'target_id' => $actionRequest->target_id,
+                'target_name' => $this->resolveTargetName($actionRequest),
                 'reason' => $actionRequest->reason,
                 'status' => $actionRequest->status,
                 'review_note' => $actionRequest->review_note,
@@ -86,6 +88,18 @@ class ActionRequestController extends Controller
             return;
         }
 
+        if ($actionRequest->type === 'ingredient_deletion' && $actionRequest->target_type === 'ingredient') {
+            $ingredient = Ingredient::findOrFail($actionRequest->target_id);
+
+            if ($ingredient->products()->exists()) {
+                throw new \RuntimeException('Cannot delete an ingredient that is used in a product recipe.');
+            }
+
+            $ingredient->batches()->delete();
+            $ingredient->delete();
+            return;
+        }
+
         if ($actionRequest->type === 'price_change' && $actionRequest->target_type === 'product') {
             Product::whereKey($actionRequest->target_id)->update([
                 'price' => $actionRequest->payload['new_price'] ?? null,
@@ -122,5 +136,15 @@ class ActionRequestController extends Controller
                 ]);
             }
         }
+    }
+
+    private function resolveTargetName(ActionRequest $actionRequest): ?string
+    {
+        return match ($actionRequest->target_type) {
+            'product' => optional(Product::find($actionRequest->target_id))->name,
+            'ingredient' => optional(Ingredient::find($actionRequest->target_id))->name,
+            'transaction' => $actionRequest->target_id ? 'Transaction #' . $actionRequest->target_id : null,
+            default => null,
+        };
     }
 }

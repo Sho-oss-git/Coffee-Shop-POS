@@ -155,13 +155,13 @@ function closeVoid() {
     <Head title="Sales History" />
 
     <AppLayout>
-        <div class="flex min-w-0 flex-col gap-6 bg-muted/20 p-3 sm:p-4 lg:p-6">
+        <div class="flex min-w-0 flex-col gap-6 bg-background p-3 sm:p-4 lg:p-6">
             <!-- Header -->
             <div class="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="text-sm font-medium text-muted-foreground">All records</p>
-                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Sales History</h1>
-                    <p class="text-sm text-muted-foreground">Browse and filter all past transactions.</p>
+                    <p class="text-sm font-medium text-foreground/70">All records</p>
+                    <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl text-foreground">Sales History</h1>
+                    <p class="text-sm text-foreground/60">Browse and filter all past transactions.</p>
                 </div>
             </div>
 
@@ -205,7 +205,7 @@ function closeVoid() {
                 </button>
             </div>
 
-            <!-- Transactions table -->
+<!-- Transactions table -->
             <section class="overflow-hidden rounded-xl border bg-background shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-2 border-b p-4">
                     <div class="flex items-center gap-3">
@@ -213,8 +213,8 @@ function closeVoid() {
                             <History class="h-5 w-5 text-sky-600" />
                         </span>
                         <div>
-                            <h2 class="font-semibold">Transactions</h2>
-                            <p class="text-xs text-muted-foreground">
+                            <h2 class="font-semibold text-foreground">Transactions</h2>
+                            <p class="text-xs text-foreground/60">
                                 <template v-if="transactions.total">
                                     Showing {{ transactions.from }}–{{ transactions.to }} of {{ transactions.total }}
                                 </template>
@@ -229,38 +229,38 @@ function closeVoid() {
                         <thead class="bg-muted/50">
                             <tr>
                                 <th class="w-8 p-2"></th>
-                                <th class="p-2 text-left">Transaction</th>
-                                <th class="p-2 text-left">Date &amp; Time</th>
-                                <th class="p-2 text-left">Cashier</th>
-                                <th class="p-2 text-left">Payment</th>
-                                <th class="p-2 text-right">Items</th>
-                                <th class="p-2 text-right">Total</th>
-                                <th class="p-2 text-right">Received</th>
-                                <th class="p-2 text-right">Change</th>
-                                <th class="p-2 text-left">Status</th>
-                                <th class="p-2 text-left">Actions</th>
+                                <th class="p-2 text-left text-foreground/70">Transaction</th>
+                                <th class="p-2 text-left text-foreground/70">Date & Time</th>
+                                <th class="p-2 text-left text-foreground/70">Cashier</th>
+                                <th class="p-2 text-left text-foreground/70">Payment</th>
+                                <th class="p-2 text-right text-foreground/70">Items</th>
+                                <th class="p-2 text-right text-foreground/70">Total</th>
+                                <th class="p-2 text-right text-foreground/70">Received</th>
+                                <th class="p-2 text-right text-foreground/70">Change</th>
+                                <th class="p-2 text-left text-foreground/70">Status</th>
+                                <th class="p-2 text-left text-foreground/70">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template v-for="t in transactions.data" :key="t.id">
                                 <tr class="cursor-pointer border-t hover:bg-muted/30" @click="toggleExpanded(t.id)">
-                                    <td class="p-2 text-muted-foreground">
+                                    <td class="p-2 text-foreground/70">
                                         <ChevronDown v-if="expandedId === t.id" class="h-4 w-4" />
                                         <ChevronRight v-else class="h-4 w-4" />
                                     </td>
-                                    <td class="p-2 font-medium">#{{ t.id }}</td>
-                                    <td class="p-2">{{ formatDateTime(t.created_at) }}</td>
-                                    <td class="p-2">{{ t.user?.name ?? '—' }}</td>
+                                    <td class="p-2 font-medium text-foreground">#{{ t.id }}</td>
+                                    <td class="p-2 text-foreground">{{ formatDateTime(t.created_at) }}</td>
+                                    <td class="p-2 text-foreground">{{ t.user?.name ?? '—' }}</td>
                                     <td class="p-2">
                                         <span class="inline-flex items-center gap-1 text-xs">
                                             <Wallet class="h-3.5 w-3.5" :class="t.payment_method === 'gcash' ? 'text-amber-500' : 'text-emerald-600'" />
-                                            {{ paymentLabel(t.payment_method) }}
+                                            <span class="text-foreground">{{ paymentLabel(t.payment_method) }}</span>
                                         </span>
                                     </td>
-                                    <td class="p-2 text-right">{{ t.items.reduce((sum, i) => sum + i.quantity, 0) }}</td>
-                                    <td class="p-2 text-right font-medium">{{ money(t.total) }}</td>
-                                    <td class="p-2 text-right">{{ money(t.amount_received) }}</td>
-                                    <td class="p-2 text-right">{{ money(t.change) }}</td>
+                                    <td class="p-2 text-right text-foreground">{{ t.items.reduce((sum, i) => sum + i.quantity, 0) }}</td>
+                                    <td class="p-2 text-right font-medium text-foreground">{{ money(t.total) }}</td>
+                                    <td class="p-2 text-right text-foreground">{{ money(t.amount_received) }}</td>
+                                    <td class="p-2 text-right text-foreground">{{ money(t.change) }}</td>
                                     <td class="p-2">
                                         <span class="rounded-full px-2 py-0.5 text-xs font-medium capitalize" :class="statusClasses(t.status)">
                                             {{ t.status }}
@@ -293,7 +293,7 @@ function closeVoid() {
                                             <div class="flex-1">
                                                 <table class="w-full text-xs">
                                                     <thead>
-                                                        <tr class="text-muted-foreground">
+                                                        <tr class="text-foreground/60">
                                                             <th class="p-1.5 text-left">Product</th>
                                                             <th class="p-1.5 text-right">Price</th>
                                                             <th class="p-1.5 text-right">Qty</th>
@@ -304,14 +304,14 @@ function closeVoid() {
                                                     </thead>
                                                     <tbody>
                                                         <tr v-for="item in t.items" :key="item.id" class="border-t border-border/60">
-                                                            <td class="p-1.5">{{ item.product_name }}</td>
-                                                            <td class="p-1.5 text-right">{{ money(item.price) }}</td>
-                                                            <td class="p-1.5 text-right">{{ item.quantity }}</td>
-                                                            <td class="p-1.5 text-right">{{ money(item.subtotal) }}</td>
-                                                            <td class="p-1.5 text-right">
+                                                            <td class="p-1.5 text-foreground">{{ item.product_name }}</td>
+                                                            <td class="p-1.5 text-right text-foreground">{{ money(item.price) }}</td>
+                                                            <td class="p-1.5 text-right text-foreground">{{ item.quantity }}</td>
+                                                            <td class="p-1.5 text-right text-foreground">{{ money(item.subtotal) }}</td>
+                                                            <td class="p-1.5 text-right text-foreground">
                                                                 {{ item.unit_cost !== null ? money(item.unit_cost) : '—' }}
                                                             </td>
-                                                            <td class="p-1.5 text-right">
+                                                            <td class="p-1.5 text-right text-foreground">
                                                                 {{ item.cogs !== null ? money(item.cogs) : '—' }}
                                                             </td>
                                                         </tr>
@@ -321,7 +321,7 @@ function closeVoid() {
                                                 <!-- Order details -->
                                                 <div
                                                     v-if="t.order_number || t.customer_name || t.notes"
-                                                    class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground"
+                                                    class="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-foreground/60"
                                                 >
                                                     <span v-if="t.order_number">
                                                         Order: <span class="font-medium text-foreground">#{{ String(t.order_number).padStart(3, '0') }}</span>
@@ -341,14 +341,14 @@ function closeVoid() {
                                             <!-- GCash proof panel — only for GCash payments -->
                                             <div v-if="t.payment_method === 'gcash'" class="w-full shrink-0 lg:w-64">
                                                 <div class="rounded-lg border p-3">
-                                                    <p class="mb-2 text-xs font-medium text-muted-foreground">GCash Payment</p>
+                                                    <p class="mb-2 text-xs font-medium text-foreground/60">GCash Payment</p>
 
-                                                    <p class="text-xs">
+                                                    <p class="text-xs text-foreground/70">
                                                         Reference #:
-                                                        <span class="font-medium">{{ t.gcash_reference_number ?? '—' }}</span>
+                                                        <span class="font-medium text-foreground">{{ t.gcash_reference_number ?? '—' }}</span>
                                                     </p>
-                                                    <p class="mt-1 text-xs">
-                                                        Amount Paid: <span class="font-medium">{{ money(t.amount_received) }}</span>
+                                                    <p class="mt-1 text-xs text-foreground/70">
+                                                        Amount Paid: <span class="font-medium text-foreground">{{ money(t.amount_received) }}</span>
                                                     </p>
 
                                                     <a
@@ -360,7 +360,7 @@ function closeVoid() {
                                                     >
                                                         <img :src="t.gcash_proof_url" alt="GCash payment proof" class="h-32 w-full object-cover" />
                                                     </a>
-                                                    <p v-else class="mt-2 text-xs italic text-muted-foreground">No proof image uploaded</p>
+                                                    <p v-else class="mt-2 text-xs italic text-foreground/60">No proof image uploaded</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -369,7 +369,7 @@ function closeVoid() {
                             </template>
 
                             <tr v-if="!transactions.data.length">
-                                <td colspan="11" class="p-6 text-center text-muted-foreground">No transactions match these filters</td>
+                                <td colspan="11" class="p-6 text-center text-foreground/60">No transactions match these filters</td>
                             </tr>
                         </tbody>
                     </table>

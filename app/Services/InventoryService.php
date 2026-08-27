@@ -179,6 +179,7 @@ class InventoryService
 
                     InventoryLog::create([
                         'product_id' => $product->id,
+                        'user_id' => auth()->id(),
                         'type' => 'sale',
                         'quantity_change' => -$item['quantity'],
                         'note' => "Sold {$item['quantity']} x {$product->name}",
@@ -214,6 +215,7 @@ class InventoryService
             InventoryLog::create([
                 'ingredient_id' => $ingredientId,
                 'ingredient_batch_id' => $batch->id,
+                'user_id' => auth()->id(),
                 'type' => 'sale',
                 'quantity_change' => -$consume,
                 'note' => "Consumed from batch #{$batch->id}",
@@ -245,6 +247,7 @@ class InventoryService
         InventoryLog::create([
             'ingredient_id' => $ingredient->id,
             'ingredient_batch_id' => $batch->id,
+            'user_id' => auth()->id(),
             'type' => 'restock',
             'quantity_change' => $baseQty,
             'note' => "Restocked {$quantity}{$unit}",
