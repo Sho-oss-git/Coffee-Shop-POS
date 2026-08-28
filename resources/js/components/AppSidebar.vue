@@ -18,6 +18,7 @@ import {
     ShoppingCart,
     Users,
     Warehouse,
+    DatabaseBackup,
 } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import { usePermissions } from '@/composables/usePermissions';
@@ -119,6 +120,17 @@ const allNavGroups: RoleNavGroup[] = [
                 href: '/reports/attendance',
                 icon: PieChart,
                 roles: ['admin', 'manager'],
+            },
+        ],
+    },
+    {
+        label: 'System',
+        items: [
+            {
+                title: 'Backup & Restore',
+                href: '/backup-restore',
+                icon: DatabaseBackup,
+                roles: ['admin'],
             },
         ],
     },

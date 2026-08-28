@@ -40,6 +40,7 @@ class HandleInertiaRequests extends Middleware
             // receipt modal from ever opening).
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
                 'transaction' => fn () => $request->session()->get('transaction'),
             ],
         ];

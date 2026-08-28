@@ -11,6 +11,7 @@ use App\Http\Controllers\ClockStatusController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\ActionRequestController;
+use App\Http\Controllers\BackupRestoreController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -358,6 +359,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::put('/{user}/schedule', [ScheduleController::class, 'update'])
                         ->name('schedule.update');
                 });
+        });
+
+    // ========================================================
+    // ADMIN ONLY — BACKUP & RESTORE
+    // ========================================================
+
+    Route::middleware('role:admin')
+        ->prefix('backup-restore')
+        ->name('backup-restore.')
+        ->group(function () {
+            Route::get('/', [BackupRestoreController::class, 'index'])
+                ->name('index');
+
+            Route::post('/', [BackupRestoreController::class, 'create'])
+                ->name('create');
+
+            Route::get('/list', [BackupRestoreController::class, 'list'])
+                ->name('list');
+
+            Route::get('/{backup}/download', [BackupRestoreController::class, 'download'])
+                ->name('download');
+
+            Route::post('/restore', [BackupRestoreController::class, 'restore'])
+                ->name('restore');
+
+            Route::delete('/{backup}', [BackupRestoreController::class, 'destroy'])
+                ->name('destroy');
         });
 });
 

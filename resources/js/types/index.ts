@@ -49,3 +49,20 @@ export interface User {
 export type Employee = User;
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface Backup {
+    name: string;
+    size: number;
+    size_human: string;
+    date: string;
+    type: 'full' | 'pre-restore';
+}
+
+export interface BackupResponse {
+    backups: Backup[];
+}
+
+export interface RestoreResponse {
+    success: boolean;
+    message?: string;
+}
