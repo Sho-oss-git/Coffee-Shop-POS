@@ -146,9 +146,9 @@ class InventoryReportWordExport
             ],
             'stock-in' => [
                 'heading' => 'Stock In / Restocking',
-                'headings' => ['Date', 'Ingredient', 'Batch #', 'Quantity', 'Unit', 'Received Date', 'Expiry Date', 'Total Cost (₱)', 'Note'],
+                'headings' => ['Date', 'Ingredient', 'Batch #', 'Quantity', 'Unit', 'Received Date', 'Expiry Date', 'Old Stock Cost (₱)', 'New Stock Cost (₱)', 'Note'],
                 'rows' => $this->data['stockIn'] ?? [],
-                'currencyCols' => [8],
+                'currencyCols' => [8, 9],
                 'statusCol' => null,
                 'footerRows' => [],
             ],

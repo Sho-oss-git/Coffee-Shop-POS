@@ -9,7 +9,7 @@ class InventoryLog extends Model
 {
     protected $fillable = [
         'ingredient_id', 'ingredient_batch_id', 'product_id', 'user_id',
-        'type', 'quantity_change', 'note',
+        'type', 'quantity_change', 'note', 'cost_old', 'cost_new',
     ];
 
     protected function casts(): array

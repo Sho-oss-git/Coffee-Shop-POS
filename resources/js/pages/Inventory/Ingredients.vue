@@ -367,6 +367,13 @@ const restockUnitOptions = computed(() =>
     batchesTarget.value ? UNITS_BY_TYPE[batchesTarget.value.measurement_type] : [],
 );
 
+// Cost of the existing (old) stock before this restock, and the cost of the
+// new batch being entered — both surfaced in the Restock dialog so the user
+// can see what they're adding against what's already on hand.
+const oldStockValue = computed(() => batchesTarget.value?.total_value ?? 0);
+const newBatchCost = computed(() => (restockForm.total_cost ? Number(restockForm.total_cost) : 0));
+const projectedStockValue = computed(() => oldStockValue.value + newBatchCost.value);
+
 function openRestock(ingredient: Ingredient) {
     batchesTarget.value = ingredient;
     restockForm.reset();
@@ -785,6 +792,26 @@ const hasIngredients = computed(() => filteredIngredients.value.length > 0);
                 <DialogHeader>
                     <DialogTitle>Restock — {{ batchesTarget?.name }}</DialogTitle>
                 </DialogHeader>
+
+                <!-- Old vs. new stock cost summary -->
+                <div class="space-y-1.5 rounded-md border border-input bg-muted/30 p-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-foreground/60">Current stock (old):</span>
+                        <span class="font-medium text-foreground">
+                            {{ formatStock(Number(batchesTarget!.total_stock), batchesTarget!.measurement_type)
+                            }}{{ displayUnit(batchesTarget!.unit) }}
+                            · {{ formatCurrency(oldStockValue) }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-foreground/60">New stock cost:</span>
+                        <span class="font-medium text-foreground">{{ formatCurrency(newBatchCost) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-input pt-1.5">
+                        <span class="text-foreground/60">Projected total value:</span>
+                        <span class="font-semibold text-foreground">{{ formatCurrency(projectedStockValue) }}</span>
+                    </div>
+                </div>
 
                 <form class="space-y-4" @submit.prevent="submitRestock">
                     <div class="grid grid-cols-2 gap-3">

@@ -228,11 +228,18 @@ class InventoryService
         }
     }
 
-    public function addBatch(Ingredient $ingredient, float $quantity, string $unit, ?string $receivedDate, ?string $expiryDate): IngredientBatch
+    public function addBatch(Ingredient $ingredient, float $quantity, string $unit, ?string $receivedDate, ?string $expiryDate, ?float $totalCost = null): IngredientBatch
     {
         if (! $this->unitsAreCompatible($unit, $ingredient->unit === 'pcs' ? 'pcs' : $this->baseUnitFor($ingredient->unit))) {
             throw new \InvalidArgumentException('Batch unit is not compatible with this ingredient.');
         }
+
+        // Value of stock on hand right before this restock — used for the
+        // "old stock cost" column on restock reports. Only meaningful when a
+        // running unit_cost is set; otherwise null.
+        $costOld = $ingredient->unit_cost !== null
+            ? round((float) $ingredient->total_stock * (float) $ingredient->unit_cost, 2)
+            : null;
 
         $baseQty = $this->toBaseUnit($quantity, $unit);
 
@@ -242,6 +249,7 @@ class InventoryService
             'unit' => $this->baseUnitFor($ingredient->unit),
             'received_date' => $receivedDate ?? now()->toDateString(),
             'expiry_date' => $expiryDate,
+            'total_cost' => $totalCost,
         ]);
 
         InventoryLog::create([
@@ -251,6 +259,8 @@ class InventoryService
             'type' => 'restock',
             'quantity_change' => $baseQty,
             'note' => "Restocked {$quantity}{$unit}",
+            'cost_old' => $costOld,
+            'cost_new' => $totalCost,
         ]);
 
         return $batch;

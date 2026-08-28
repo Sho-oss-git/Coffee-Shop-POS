@@ -130,6 +130,38 @@ class IngredientController extends Controller
         ]);
     }
 
+    /**
+     * On-screen Restock History report (most recent first, paginated).
+     */
+    public function restockHistory(Request $request): Response
+    {
+        $ingredientId = $request->input('ingredient_id');
+        $dateFrom = $request->date('date_from');
+        $dateTo = $request->date('date_to');
+
+        $logs = InventoryLog::query()
+            ->with([
+                'ingredient:id,name,unit',
+                'ingredientBatch:id,unit,received_date,expiry_date',
+            ])
+            ->where('type', 'restock')
+            ->whereNotNull('ingredient_id')
+            ->when($ingredientId, fn ($q) => $q->where('ingredient_id', $ingredientId))
+            ->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo))
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $ingredients = Ingredient::query()->orderBy('name')->get(['id', 'name']);
+
+        return Inertia::render('Reports/RestockHistory', [
+            'logs' => $logs,
+            'ingredients' => $ingredients,
+            'filters' => $request->only(['ingredient_id', 'date_from', 'date_to']),
+        ]);
+    }
+
     public function restock(
         Request $request,
         Ingredient $ingredient
@@ -425,7 +457,8 @@ class IngredientController extends Controller
                 $log->ingredientBatch?->expiry_date
                     ?->format('Y-m-d')
                     ?? '—',
-                $log->ingredientBatch?->total_cost,
+                $log->cost_old,
+                $log->cost_new ?? $log->ingredientBatch?->total_cost,
                 $log->note ?? '—',
             ])
             ->all();

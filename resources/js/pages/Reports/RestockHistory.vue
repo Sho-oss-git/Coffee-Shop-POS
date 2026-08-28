@@ -7,9 +7,11 @@ interface LogRow {
     id: number;
     quantity_change: number;
     note: string | null;
+    cost_old: number | null;
+    cost_new: number | null;
     created_at: string;
     ingredient: { id: number; name: string; unit: string } | null;
-    ingredient_batch: { id: number; received_date: string | null; expiry_date: string | null } | null;
+    ingredient_batch: { id: number; unit: string | null; received_date: string | null; expiry_date: string | null } | null;
 }
 
 interface Paginated<T> {
@@ -73,14 +75,18 @@ function formatDate(value: string) {
             </div>
 
             <div class="rounded-lg border overflow-x-auto">
-                <table class="w-full text-sm min-w-[600px]">
+                <table class="w-full text-sm min-w-[800px]">
                     <thead class="bg-muted/50">
                         <tr>
                             <th class="p-2 text-left text-foreground/70">Date</th>
                             <th class="p-2 text-left text-foreground/70">Ingredient</th>
+                            <th class="p-2 text-right text-foreground/70">Batch #</th>
                             <th class="p-2 text-right text-foreground/70">Quantity Added</th>
+                            <th class="p-2 text-right text-foreground/70">Unit</th>
                             <th class="p-2 text-right text-foreground/70">Batch Received</th>
                             <th class="p-2 text-right text-foreground/70">Batch Expiry</th>
+                            <th class="p-2 text-right text-foreground/70">Old Stock Cost (₱)</th>
+                            <th class="p-2 text-right text-foreground/70">New Stock Cost (₱)</th>
                             <th class="p-2 text-left text-foreground/70">Note</th>
                         </tr>
                     </thead>
@@ -89,7 +95,13 @@ function formatDate(value: string) {
                             <td class="p-2 text-foreground">{{ formatDate(log.created_at) }}</td>
                             <td class="p-2 text-foreground">{{ log.ingredient?.name ?? '—' }}</td>
                             <td class="p-2 text-right text-foreground">
-                                +{{ log.quantity_change }} {{ log.ingredient?.unit ?? '' }}
+                                {{ log.ingredient_batch?.id ?? '—' }}
+                            </td>
+                            <td class="p-2 text-right text-foreground">
+                                +{{ log.quantity_change }}
+                            </td>
+                            <td class="p-2 text-right text-foreground">
+                                {{ log.ingredient_batch?.unit ?? log.ingredient?.unit ?? '' }}
                             </td>
                             <td class="p-2 text-right text-foreground">
                                 {{ log.ingredient_batch?.received_date ? formatDate(log.ingredient_batch.received_date) : '—' }}
@@ -97,10 +109,16 @@ function formatDate(value: string) {
                             <td class="p-2 text-right text-foreground">
                                 {{ log.ingredient_batch?.expiry_date ? formatDate(log.ingredient_batch.expiry_date) : '—' }}
                             </td>
+                            <td class="p-2 text-right text-foreground">
+                                {{ log.cost_old !== null ? '₱' + Number(log.cost_old).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—' }}
+                            </td>
+                            <td class="p-2 text-right text-foreground">
+                                {{ log.cost_new !== null ? '₱' + Number(log.cost_new).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—' }}
+                            </td>
                             <td class="p-2 text-foreground">{{ log.note ?? '—' }}</td>
                         </tr>
                         <tr v-if="!logs.data.length">
-                            <td colspan="6" class="p-4 text-center text-foreground/60">No restock history yet</td>
+                            <td colspan="10" class="p-4 text-center text-foreground/60">No restock history yet</td>
                         </tr>
                     </tbody>
                 </table>

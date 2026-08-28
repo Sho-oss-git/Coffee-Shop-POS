@@ -25,12 +25,12 @@ class StockInSheet extends BaseReportSheet
 
     public function headings(): array
     {
-        return ['Date Logged', 'Ingredient', 'Batch #', 'Quantity Added', 'Unit', 'Batch Received', 'Batch Expiry', 'Batch Cost (₱)', 'Note'];
+        return ['Date Logged', 'Ingredient', 'Batch #', 'Quantity Added', 'Unit', 'Batch Received', 'Batch Expiry', 'Old Stock Cost (₱)', 'New Stock Cost (₱)', 'Note'];
     }
 
     public function currencyColumns(): array
     {
-        return [8];
+        return [8, 9];
     }
 
     public function footerRows(): array
@@ -39,10 +39,12 @@ class StockInSheet extends BaseReportSheet
             return [];
         }
 
-        $total = array_sum(array_map(fn (array $r) => (float) ($r[7] ?? 0), $this->rows));
+        $newTotal = array_sum(array_map(fn (array $r) => (float) ($r[8] ?? 0), $this->rows));
+        $oldTotal = array_sum(array_map(fn (array $r) => (float) ($r[7] ?? 0), $this->rows));
 
         return [
-            ['', '', '', '', '', '', 'TOTAL RECEIVED COST', $total, ''],
+            ['', '', '', '', '', '', 'TOTAL OLD COST', $oldTotal, '', ''],
+            ['', '', '', '', '', '', 'TOTAL NEW COST', '', $newTotal, ''],
         ];
     }
 }
