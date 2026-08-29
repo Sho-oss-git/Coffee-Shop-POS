@@ -6,6 +6,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use App\Models\ActionRequest;
+use App\Models\ShopSetting;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -23,6 +24,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'shop' => fn () => [
+                'name' => ShopSetting::displayName(),
+                'logo_url' => ShopSetting::current()->logo_url,
+            ],
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user(),

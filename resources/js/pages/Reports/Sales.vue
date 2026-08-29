@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import DailyMonthlyYearly from '@/components/DailyMonthlyYearly.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Printer, FileSpreadsheet, FileText, ChevronDown } from 'lucide-vue-next';
 
@@ -48,6 +48,8 @@ const props = defineProps<{
     orderTypeSummary: OrderTypeSummary[];
     filters: { period: 'daily' | 'monthly' | 'yearly'; date: string };
 }>();
+
+const shopName = computed(() => (usePage().props.shop as { name: string })?.name ?? 'JC66 Coffee Shop');
 
 const period = ref(props.filters.period);
 const date = ref(props.filters.date);
@@ -180,7 +182,7 @@ function exportWord() {
             </div>
 
             <div class="hidden print:block text-center mb-4">
-                <h1 class="text-xl font-bold">JC66 COFFEE SHOP</h1>
+                <h1 class="text-xl font-bold">{{ shopName }}</h1>
                 <h2 class="text-lg font-semibold">SALES REPORT</h2>
                 <p class="text-sm">{{ periodLabel }} — {{ date }}</p>
                 <p class="text-xs text-muted-foreground">Generated: {{ new Date().toLocaleString('en-PH') }}</p>

@@ -3,7 +3,10 @@ import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+const isAdmin = (page.props.auth.user as { role?: string })?.role === 'admin';
 
 const sidebarNavItems: NavItem[] = [
     {
@@ -18,6 +21,14 @@ const sidebarNavItems: NavItem[] = [
         title: 'Appearance',
         href: '/settings/appearance',
     },
+    ...(isAdmin
+        ? [
+              {
+                  title: 'Shop',
+                  href: '/settings/shop',
+              },
+          ]
+        : []),
 ];
 
 const currentPath = window.location.pathname;

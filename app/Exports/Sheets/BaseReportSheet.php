@@ -7,6 +7,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use App\Models\ShopSetting;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -96,7 +97,7 @@ abstract class BaseReportSheet implements FromArray, ShouldAutoSize, WithEvents,
     public function array(): array
     {
         $rows = [
-            ['JC66 COFFEE SHOP'],
+            [mb_strtoupper(ShopSetting::displayName())],
             ['INVENTORY MONITORING REPORT'],
             ['Period: ' . ($this->meta['period'] ?? '—')],
             [
@@ -615,7 +616,7 @@ abstract class BaseReportSheet implements FromArray, ShouldAutoSize, WithEvents,
          */
 
         $sheet->getHeaderFooter()->setOddHeader(
-            '&L&8JC66 COFFEE SHOP' .
+            '&L&8' . mb_strtoupper(ShopSetting::displayName()) .
             '&R&8INVENTORY MONITORING REPORT'
         );
 
@@ -630,7 +631,7 @@ abstract class BaseReportSheet implements FromArray, ShouldAutoSize, WithEvents,
         );
 
         $sheet->getHeaderFooter()->setOddFooter(
-            '&L&8JC66 Coffee Shop POS' .
+            '&L&8' . ShopSetting::displayName() . ' POS' .
             '&C&8Page &P of &N' .
             "&R&8Generated {$generatedDate}"
         );

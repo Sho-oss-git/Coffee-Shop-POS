@@ -21,6 +21,10 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    shop: {
+        name: string;
+        logo_url: string | null;
+    };
     ziggy: {
         location: string;
         url: string;

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\ShopSettingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,4 +19,12 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
+
+    // Shop branding (logo + name) — admin only.
+    Route::get('settings/shop', [ShopSettingController::class, 'edit'])
+        ->middleware('role:admin')
+        ->name('shop.edit');
+    Route::patch('settings/shop', [ShopSettingController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('shop.update');
 });

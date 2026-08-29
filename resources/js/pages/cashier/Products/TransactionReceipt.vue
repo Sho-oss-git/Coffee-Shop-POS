@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 
 interface ReceiptItem {
     product_name: string;
@@ -35,7 +36,7 @@ const props = withDefaults(
         storeCode?: string;
     }>(),
     {
-        shopName: 'Your Shop Name',
+        shopName: (usePage().props.shop as { name?: string })?.name ?? 'JC66 Coffee Shop',
         addressLine: 'Street Address',
         cityLine: 'City, ZIP',
         phone: '+63 000-000-0000',

@@ -30,6 +30,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
+const shop = computed(() => page.props.shop as { name: string; logo_url: string | null } | undefined);
 
 const isCurrentRoute = (url: string) => {
     return page.url === url;
@@ -74,7 +75,8 @@ const rightNavItems: NavItem[] = [
                         <SheetContent side="left" class="w-[300px] p-6">
                             <SheetTitle class="sr-only">Navigation Menu</SheetTitle>
                             <SheetHeader class="flex justify-start text-left">
-                                <AppLogoIcon class="size-6 fill-current text-black dark:text-white" />
+                                <img v-if="shop?.logo_url" :src="shop.logo_url" alt="Shop logo" class="size-8 object-contain" />
+                                <AppLogoIcon v-else class="size-6 fill-current text-black dark:text-white" />
                             </SheetHeader>
                             <div class="flex flex-col justify-between h-full space-y-4 py-6 flex-1">
                                 <nav class="-mx-3 space-y-1">
